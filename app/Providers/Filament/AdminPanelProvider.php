@@ -40,6 +40,7 @@ class AdminPanelProvider extends PanelProvider
                 // 'success' => Color::Emerald,
                 // 'warning' => Color::Amber,
             ])
+            // ->spa()
             ->font('Inter')
             ->brandName(fn () => StoreSetting::get(StoreSetting::STORE_NAME, 'Antigravity POS'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')

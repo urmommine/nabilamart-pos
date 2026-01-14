@@ -16,19 +16,27 @@ class SalesChartWidget extends ChartWidget
 
     protected function getData(): array
     {
+        $startDate = Carbon::today()->subDays(6);
+        
+        $salesData = Order::query()
+            ->whereDate('created_at', '>=', $startDate)
+            ->paid()
+            ->selectRaw('DATE(created_at) as date, SUM(total_amount) as total')
+            ->groupBy('date')
+            ->get()
+            ->pluck('total', 'date')
+            ->toArray();
+
         $data = [];
         $labels = [];
 
-        // Get last 7 days
+        // Fill 7 days
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::today()->subDays($i);
+            $dateString = $date->format('Y-m-d');
+            
             $labels[] = $date->format('d M');
-            
-            $dailySales = Order::whereDate('created_at', $date)
-                ->paid()
-                ->sum('total_amount');
-            
-            $data[] = $dailySales;
+            $data[] = $salesData[$dateString] ?? 0;
         }
 
         return [

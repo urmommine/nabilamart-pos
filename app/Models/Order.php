@@ -83,6 +83,14 @@ class Order extends Model
     }
 
     /**
+     * Get the customer associated with the order.
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    /**
      * Alias for user relationship
      */
     public function kasir(): BelongsTo

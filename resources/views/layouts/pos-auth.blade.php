@@ -38,7 +38,31 @@
 
     <style>
         [x-cloak] { display: none !important; }
+        
+        /* Hide Material Symbols text until font loads */
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-size: 24px;
+            visibility: hidden;
+        }
+        
+        /* Show icons when font is loaded */
+        .fonts-loaded .material-symbols-outlined {
+            visibility: visible;
+        }
     </style>
+    
+    <script>
+        // Detect when Material Symbols font is loaded
+        document.fonts.ready.then(function() {
+            document.documentElement.classList.add('fonts-loaded');
+        });
+        
+        // Fallback: show icons after 1 second even if font detection fails
+        setTimeout(function() {
+            document.documentElement.classList.add('fonts-loaded');
+        }, 1000);
+    </script>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles

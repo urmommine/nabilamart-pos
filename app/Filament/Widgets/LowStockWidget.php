@@ -20,6 +20,7 @@ class LowStockWidget extends BaseWidget
         return $table
             ->query(
                 Product::query()
+                    ->with('category')
                     ->active()
                     ->lowStock()
                     ->orderBy('stock', 'asc')

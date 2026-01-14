@@ -14,45 +14,55 @@ class StatsOverviewWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        // Today's sales
-        $todaySales = Order::today()->paid()->sum('total_amount');
-        $yesterdaySales = Order::whereDate('created_at', Carbon::yesterday())->paid()->sum('total_amount');
-        $salesChange = $yesterdaySales > 0 
-            ? (($todaySales - $yesterdaySales) / $yesterdaySales) * 100 
-            : 100;
+        return \Illuminate\Support\Facades\Cache::remember('dashboard_stats', now()->addMinutes(1), function () {
+            // Today's sales
+            $todaySales = Order::today()->paid()->sum('total_amount');
+            $yesterdaySales = Order::whereDate('created_at', Carbon::yesterday())->paid()->sum('total_amount');
+            $salesChange = $yesterdaySales > 0 
+                ? (($todaySales - $yesterdaySales) / $yesterdaySales) * 100 
+                : 100;
 
-        // Today's transactions
-        $todayTransactions = Order::today()->paid()->count();
-        $yesterdayTransactions = Order::whereDate('created_at', Carbon::yesterday())->paid()->count();
+            // Today's transactions
+            $todayTransactions = Order::today()->paid()->count();
+            $yesterdayTransactions = Order::whereDate('created_at', Carbon::yesterday())->paid()->count();
 
-        // Active products
-        $activeProducts = Product::active()->count();
-        
-        // Low stock products
-        $lowStockCount = Product::active()->lowStock()->count();
+            // Active products
+            $activeProducts = Product::active()->count();
+            
+            // Low stock products
+            $lowStockCount = Product::active()->lowStock()->count();
 
-        return [
-            Stat::make('Penjualan Hari Ini', 'Rp ' . number_format($todaySales, 0, ',', '.'))
-                ->description($salesChange >= 0 ? '+' . number_format($salesChange, 1) . '%' : number_format($salesChange, 1) . '%')
-                ->descriptionIcon($salesChange >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
-                ->color($salesChange >= 0 ? 'success' : 'danger')
-                ->chart([7, 3, 4, 5, 6, 3, 5, 8]),
+            // Total Income
+            $totalIncome = Order::paid()->sum('total_amount');
 
-            Stat::make('Transaksi Hari Ini', $todayTransactions)
-                ->description('Kemarin: ' . $yesterdayTransactions)
-                ->descriptionIcon('heroicon-m-shopping-cart')
-                ->color('info'),
+            return [
+                Stat::make('Total Pendapatan', 'Rp ' . number_format($totalIncome, 0, ',', '.'))
+                    ->description('Semua transaksi berhasil')
+                    ->descriptionIcon('heroicon-m-banknotes')
+                    ->color('success'),
 
-            Stat::make('Total Produk Aktif', $activeProducts)
-                ->description('Produk tersedia')
-                ->descriptionIcon('heroicon-m-cube')
-                ->color('primary'),
+                Stat::make('Penjualan Hari Ini', 'Rp ' . number_format($todaySales, 0, ',', '.'))
+                    ->description($salesChange >= 0 ? '+' . number_format($salesChange, 1) . '%' : number_format($salesChange, 1) . '%')
+                    ->descriptionIcon($salesChange >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
+                    ->color($salesChange >= 0 ? 'success' : 'danger')
+                    ->chart([7, 3, 4, 5, 6, 3, 5, 8]),
 
-            Stat::make('Stok Menipis', $lowStockCount)
-                ->description($lowStockCount > 0 ? 'Perlu restock!' : 'Semua stok aman')
-                ->descriptionIcon($lowStockCount > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-check-circle')
-                ->color($lowStockCount > 0 ? 'warning' : 'success')
-                ->url($lowStockCount > 0 ? route('filament.admin.resources.products.index', ['tableFilters[low_stock][value]' => 1]) : null),
-        ];
+                Stat::make('Transaksi Hari Ini', $todayTransactions)
+                    ->description('Kemarin: ' . $yesterdayTransactions)
+                    ->descriptionIcon('heroicon-m-shopping-cart')
+                    ->color('info'),
+
+                Stat::make('Total Produk Aktif', $activeProducts)
+                    ->description('Produk tersedia')
+                    ->descriptionIcon('heroicon-m-cube')
+                    ->color('primary'),
+
+                Stat::make('Stok Menipis', $lowStockCount)
+                    ->description($lowStockCount > 0 ? 'Perlu restock!' : 'Semua stok aman')
+                    ->descriptionIcon($lowStockCount > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-check-circle')
+                    ->color($lowStockCount > 0 ? 'warning' : 'success')
+                    ->url($lowStockCount > 0 ? route('filament.admin.resources.products.index', ['tableFilters[low_stock][value]' => 1]) : null),
+            ];
+        });
     }
 }

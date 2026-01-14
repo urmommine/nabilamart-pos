@@ -7,11 +7,14 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\StoreSetting;
+use App\Services\ReceiptPrinter;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Models\Customer;
+use App\Models\CustomerProductDiscount;
 
 #[Layout('layouts.pos')]
 class PosTerminal extends Component
@@ -20,6 +23,12 @@ class PosTerminal extends Component
     public string $search = '';
     public ?int $selectedCategory = null;
     public int $perPage = 30;
+    
+    // Customer
+    public ?int $selectedCustomerId = null;
+    public ?Customer $customer = null;
+    public array $customerSearchResults = [];
+    public string $customerSearch = '';
 
     // Cart
     public array $cart = [];
@@ -102,6 +111,7 @@ class PosTerminal extends Component
             'categories' => $categories,
             'products' => $products,
             'storeName' => StoreSetting::get(StoreSetting::STORE_NAME, 'POS Store'),
+            'customers' => $this->customerSearch ? Customer::where('name', 'like', '%' . $this->customerSearch . '%')->limit(5)->get() : [],
         ]);
     }
 
@@ -150,16 +160,86 @@ class PosTerminal extends Component
             $this->cart[] = [
                 'product_id' => $product->id,
                 'name' => $product->name,
+                'original_price' => (float) $product->selling_price,
                 'price' => (float) $product->selling_price,
                 'quantity' => 1,
                 'total' => (float) $product->selling_price,
                 'image' => $product->image,
                 'stock' => $product->stock,
+                'discount_info' => null, // 'Global 10%' or 'Special $5'
             ];
         }
 
+        // Re-apply discounts whenever cart changes
+        $this->applyCustomerDiscounts();
         $this->calculateTotals();
         $this->dispatch('notify', type: 'success', message: $product->name . ' ditambahkan');
+    }
+
+    public function updatedSelectedCustomerId()
+    {
+        if ($this->selectedCustomerId) {
+            $this->customer = Customer::find($this->selectedCustomerId);
+            $this->customerSearch = $this->customer->name;
+        } else {
+            $this->customer = null;
+            $this->customerSearch = '';
+        }
+        $this->applyCustomerDiscounts();
+        $this->calculateTotals();
+    }
+
+    public function selectCustomer($id)
+    {
+        $this->selectedCustomerId = $id;
+        $this->updatedSelectedCustomerId();
+    }
+
+    public function applyCustomerDiscounts()
+    {
+        if (empty($this->cart)) return;
+
+        // Reset all to original price first
+        foreach ($this->cart as &$item) {
+            $item['price'] = $item['original_price'];
+            $item['discount_info'] = null;
+        }
+        unset($item);
+
+        if (!$this->customer) {
+            // Recalculate totals based on original prices
+            foreach ($this->cart as &$item) {
+                $item['total'] = $item['quantity'] * $item['price'];
+            }
+            return;
+        }
+
+        $globalDiscount = (float) $this->customer->default_discount_percentage;
+        $specialDiscounts = $this->customer->specialDiscounts->keyBy('product_id');
+
+        foreach ($this->cart as &$item) {
+            $productId = $item['product_id'];
+            $newPrice = $item['original_price'];
+            $info = null;
+
+            if ($specialDiscounts->has($productId)) {
+                $discount = $specialDiscounts[$productId];
+                if ($discount->discount_type === 'fixed') {
+                    $newPrice = max(0, $item['original_price'] - $discount->discount_value);
+                    $info = 'Special -Rp' . number_format($discount->discount_value, 0);
+                } else {
+                    $newPrice = max(0, $item['original_price'] * (1 - ($discount->discount_value / 100)));
+                    $info = 'Special -' . $discount->discount_value . '%';
+                }
+            } elseif ($globalDiscount > 0) {
+                $newPrice = max(0, $item['original_price'] * (1 - ($globalDiscount / 100)));
+                $info = 'Member -' . $globalDiscount . '%';
+            }
+
+            $item['price'] = $newPrice;
+            $item['discount_info'] = $info;
+            $item['total'] = $item['quantity'] * $item['price'];
+        }
     }
 
     #[On('barcodeScanned')]
@@ -181,7 +261,9 @@ class PosTerminal extends Component
             
             if ($product && $this->cart[$index]['quantity'] < $product->stock) {
                 $this->cart[$index]['quantity']++;
+                $this->cart[$index]['quantity']++;
                 $this->cart[$index]['total'] = $this->cart[$index]['quantity'] * $this->cart[$index]['price'];
+                $this->applyCustomerDiscounts(); 
                 $this->calculateTotals();
             } else {
                 $this->dispatch('notify', type: 'warning', message: 'Stok tidak mencukupi');
@@ -350,6 +432,7 @@ class PosTerminal extends Component
                 'amount_paid' => (float) $this->amountPaid,
                 'change' => $this->change,
                 'payment_status' => 'paid',
+                'customer_id' => $this->selectedCustomerId,
             ]);
 
             // Create order items and reduce stock
@@ -359,7 +442,7 @@ class PosTerminal extends Component
                     'product_id' => $item['product_id'],
                     'product_name' => $item['name'],
                     'quantity' => $item['quantity'],
-                    'unit_price' => $item['price'],
+                    'unit_price' => $item['price'], // Use discounted price
                     'total_price' => $item['total'],
                 ]);
 
@@ -379,8 +462,16 @@ class PosTerminal extends Component
             $this->calculateTotals();
             $this->showCheckoutModal = false;
 
-            // Dispatch event to print receipt
-            $this->dispatch('printReceipt', orderId: $order->id);
+            // Try direct ESC/POS printing first (silent, no dialog)
+            try {
+                $printer = new ReceiptPrinter();
+                $printer->printReceipt($order);
+                $this->dispatch('notify', type: 'success', message: 'Struk dicetak!');
+            } catch (\Exception $e) {
+                // Fallback to browser print if ESC/POS fails
+                $this->dispatch('printReceipt', orderId: $order->id);
+                $this->dispatch('notify', type: 'warning', message: 'Printer ESC/POS gagal, menggunakan browser print');
+            }
             
             $this->dispatch('notify', type: 'success', message: 'Transaksi berhasil! Invoice: ' . $order->invoice_number);
 

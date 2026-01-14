@@ -108,7 +108,7 @@
 
             <div class="pt-6 mt-6 border-t border-border-dark/50 text-center">
                 <p class="text-[#b89d9f] text-sm">
-                    Butuh bantuan? <a href="#" class="text-primary hover:underline font-medium">Hubungi Support</a>
+                    Butuh bantuan? <a href="https://wa.me/082147205734" target="_blank" class="text-primary hover:underline font-medium">Click me!</a>
                 </p>
             </div>
         </div>

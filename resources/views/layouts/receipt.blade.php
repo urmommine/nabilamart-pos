@@ -135,16 +135,28 @@
             color: white;
         }
 
+        /* Define page size for thermal printer (58mm width) */
+        @page {
+            size: 58mm auto;
+            margin: 0;
+        }
+
         @media print {
-            body {
+            html, body {
+                width: 100%;
                 background: white;
                 padding: 0;
+                margin: 0;
+                display: flex;
+                justify-content: center;
             }
 
             .receipt {
                 box-shadow: none;
-                width: 100%;
-                max-width: 80mm;
+                width: 58mm;
+                max-width: 58mm;
+                padding: 2mm;
+                margin: 0 auto;
             }
 
             .actions {
