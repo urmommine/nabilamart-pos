@@ -345,19 +345,25 @@
 @if($showCheckoutModal)
     <div class="custom-modal-backdrop" wire:click.self="closeModal" x-data @keydown.window.escape="$wire.closeModal()" @keydown.window.f1.prevent="$wire.setExactAmount()">
         <div class="custom-modal" wire:click.stop>
-            <div class="p-5 border-b border-border-light dark:border-border-dark bg-slate-50 dark:bg-background-dark/50">
-                <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2"><x-heroicon-o-credit-card class="w-6 h-6 text-blue-400" /> Pembayaran</h3>
+            <div class="p-5 border-b border-gray-200 bg-slate-50">
+                <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <x-heroicon-o-credit-card class="w-6 h-6 text-blue-400" /> 
+                    Pembayaran
+                </h3>
             </div>
             <div class="p-6 space-y-6">
                 <div class="text-center p-4 bg-primary/10 rounded-xl border border-primary/20">
-                    <p class="text-text-muted-light dark:text-text-muted-dark text-sm mb-1">Total Tagihan</p>
-                    <p class="text-4xl font-bold text-slate-900 dark:text-white">Rp {{ number_format($total, 0, ',', '.') }}</p>
+                    <p class="text-gray-600 font-bold text-sm mb-1">Total Tagihan</p>
+                    <p class="text-4xl font-bold text-slate-900">Rp {{ number_format($total, 0, ',', '.') }}</p>
                 </div>
 
                 <div class="flex gap-3">
                     @foreach(['cash' => 'Tunai', 'qris' => 'QRIS', 'transfer' => 'Transfer'] as $key => $label)
                     <button 
-                        class="flex-1 p-3 rounded-lg border-2 {{ $paymentMethod === $key ? 'border-primary bg-primary/10 text-slate-900 dark:text-white' : 'border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-text-muted-light dark:text-text-muted-dark hover:border-slate-400 dark:hover:border-gray-600' }} transition-all font-bold"
+                        class="flex-1 p-3 rounded-lg border-2 transition-all font-bold
+                               {{ $paymentMethod === $key 
+                                    ? 'border-primary bg-primary/10 text-slate-900' 
+                                    : 'border-gray-300 bg-white text-gray-700 hover:border-slate-400' }}"
                         wire:click="setPaymentMethod('{{ $key }}')"
                     >
                         {{ $label }}
@@ -368,41 +374,57 @@
                 @if($paymentMethod === 'cash')
                     <div class="space-y-4">
                         <div class="space-y-2">
-                            <label class="text-text-muted-light dark:text-text-muted-dark text-xs uppercase font-bold tracking-wider">Uang Diterima</label>
+                            <label class="text-gray-600 text-xs uppercase font-bold tracking-wider">
+                                Uang Diterima
+                            </label>
                             <input 
                                 type="number" 
                                 wire:model.live="amountPaid" 
-                                class="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg p-3 text-slate-900 dark:text-white text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent"
+                                class="w-full bg-white border border-gray-300 rounded-lg p-3 text-slate-900 text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent"
                                 placeholder="0"
-
                                 x-init="$nextTick(() => $el.focus())"
                                 wire:keydown.enter="processPayment"
                             >
                         </div>
                          
                         <div class="grid grid-cols-3 gap-2">
-                             @php $suggestions = [50000, 100000, 20000]; @endphp
-                             @foreach($suggestions as $amt)
-                                <button class="bg-slate-200 dark:bg-[#382929] text-slate-700 dark:text-white py-2 rounded text-sm hover:bg-slate-300 dark:hover:bg-[#4a3636]" wire:click="setQuickAmount({{ $amt }})">
+                            @php $suggestions = [50000, 100000, 20000]; @endphp
+                            @foreach($suggestions as $amt)
+                                <button 
+                                    class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors"
+                                    wire:click="setQuickAmount({{ $amt }})"
+                                >
                                     {{ number_format($amt/1000) }}k
                                 </button>
-                             @endforeach
-                             <button class="bg-slate-200 dark:bg-[#382929] text-slate-700 dark:text-white py-2 rounded text-sm hover:bg-slate-300 dark:hover:bg-[#4a3636] col-span-3" wire:click="setExactAmount">Uang Pas (F1)</button>
+                            @endforeach
+                            <button 
+                                class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors col-span-3"
+                                wire:click="setExactAmount"
+                            >
+                                Uang Pas (F1)
+                            </button>
                         </div>
 
                         @if($amountPaid >= $total)
-                        <div class="flex justify-between items-center bg-green-100 dark:bg-green-900/20 p-3 rounded-lg border border-green-300 dark:border-green-900/50">
-                            <span class="text-green-600 dark:text-green-500 font-bold">Kembalian</span>
-                            <span class="text-slate-900 dark:text-white text-xl font-bold">Rp {{ number_format($change, 0, ',', '.') }}</span>
+                        <div class="flex justify-between items-center bg-green-100 p-3 rounded-lg border border-green-300">
+                            <span class="text-green-700 font-bold">Kembalian</span>
+                            <span class="text-slate-900 text-xl font-bold">
+                                Rp {{ number_format($change, 0, ',', '.') }}
+                            </span>
                         </div>
                         @endif
                     </div>
                 @endif
             </div>
-            <div class="p-5 border-t border-border-light dark:border-border-dark flex gap-3 bg-slate-50 dark:bg-background-dark/50">
-                <button class="flex-1 py-3 px-4 rounded-xl border border-border-light dark:border-border-dark text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-[#382929] transition-colors font-bold" wire:click="closeModal">Batal</button>
+            <div class="p-5 border-t border-gray-200 flex gap-3 bg-slate-50">
                 <button 
-                    class="flex-[2] py-3 px-4 rounded-xl bg-primary text-white hover:bg-red-600 transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_rgba(234,42,51,0.4)]" 
+                    class="flex-1 py-3 px-4 rounded-xl border border-gray-300 text-slate-700 hover:bg-slate-100 transition-colors font-bold"
+                    wire:click="closeModal"
+                >
+                    Batal
+                </button>
+                <button 
+                    class="flex-[2] py-3 px-4 rounded-xl bg-primary text-white hover:bg-red-600 transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
                     wire:click="processPayment"
                     @if($paymentMethod === 'cash' && $amountPaid < $total) disabled @endif
                 >
