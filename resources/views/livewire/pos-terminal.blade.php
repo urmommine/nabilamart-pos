@@ -245,11 +245,12 @@
                              <p class="text-slate-900 dark:text-white text-sm font-bold">Rp {{ number_format($item['total'], 0, ',', '.') }}</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 mt-0.5">
+                     <div class="flex items-center gap-2 mt-0.5">
                          <p class="text-text-muted-light dark:text-text-muted-dark text-xs font-normal">Rp {{ number_format($item['price'], 0, ',', '.') }} / unit</p>
                          @if(isset($item['discount_info']) && $item['discount_info'])
                             <span class="text-[10px] font-bold px-1.5 py-0.5 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded">{{ $item['discount_info'] }}</span>
                          @endif
+                         <button wire:click="openItemDiscountModal({{ $index }})" class="text-xs text-primary hover:underline ml-1">Edit</button>
                     </div>
                     <div class="flex items-center justify-between mt-2">
                         <div class="flex items-center gap-2">
@@ -439,27 +440,81 @@
 @if($showDiscountModal)
     <div class="custom-modal-backdrop" wire:click.self="closeModal" x-data @keydown.window.escape="$wire.closeModal()" @keydown.window.f1.prevent="$wire.set('discountType', 0)" @keydown.window.f2.prevent="$wire.set('discountType', 1)">
         <div class="custom-modal" wire:click.stop style="max-width: 400px;">
-            <div class="p-5 border-b border-border-light dark:border-border-dark bg-slate-50 dark:bg-background-dark/50">
-                <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2"><x-heroicon-o-tag class="w-6 h-6 text-yellow-500" /> Tambah Diskon</h3>
+            <div class="p-5 border-b border-gray-200 bg-slate-50">
+                <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <x-heroicon-o-tag class="w-6 h-6 text-yellow-500" /> Tambah Diskon
+                </h3>
             </div>
             <div class="p-6 space-y-6">
-                <div class="flex bg-slate-200 dark:bg-[#382929] p-1 rounded-lg">
-                    <button class="flex-1 py-2 rounded-md text-sm font-bold transition-all {{ $discountType == 0 ? 'bg-primary text-white shadow' : 'text-text-muted-light dark:text-text-muted-dark' }}" wire:click="$set('discountType', 0)">Nominal (Rp) (F1)</button>
-                    <button class="flex-1 py-2 rounded-md text-sm font-bold transition-all {{ $discountType == 1 ? 'bg-primary text-white shadow' : 'text-text-muted-light dark:text-text-muted-dark' }}" wire:click="$set('discountType', 1)">Persen (%) (F2)</button>
+                <div class="flex bg-slate-200 p-1 rounded-lg">
+                    <button class="flex-1 py-2 rounded-md text-sm font-bold transition-all {{ $discountType == 0 ? 'bg-primary text-white shadow' : 'text-gray-600' }}" wire:click="$set('discountType', 0)">
+                        Nominal (Rp) (F1)
+                    </button>
+                    <button class="flex-1 py-2 rounded-md text-sm font-bold transition-all {{ $discountType == 1 ? 'bg-primary text-white shadow' : 'text-gray-600' }}" wire:click="$set('discountType', 1)">
+                        Persen (%) (F2)
+                    </button>
                 </div>
                 
                 <input 
                     type="number" 
                     wire:model="discountValue"
-                    class="w-full bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg p-3 text-slate-900 dark:text-white text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent text-center"
+                    class="w-full bg-white border border-gray-300 rounded-lg p-3 text-slate-900 text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent text-center"
                     placeholder="0"
                     x-init="$nextTick(() => $el.focus())"
                     wire:keydown.enter="applyDiscount"
                 >
             </div>
-            <div class="p-5 border-t border-border-light dark:border-border-dark flex gap-3 bg-slate-50 dark:bg-background-dark/50">
-                <button class="flex-1 py-3 px-4 rounded-xl border border-border-light dark:border-border-dark text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-[#382929] transition-colors font-bold" wire:click="closeModal">Batal</button>
-                <button class="flex-1 py-3 px-4 rounded-xl bg-primary text-white hover:bg-red-600 transition-colors font-bold" wire:click="applyDiscount">Terapkan (Enter)</button>
+            <div class="p-5 border-t border-gray-200 flex gap-3 bg-slate-50">
+                <button class="flex-1 py-3 px-4 rounded-xl border border-gray-300 text-slate-700 hover:bg-slate-100 transition-colors font-bold" wire:click="closeModal">
+                    Batal
+                </button>
+                <button class="flex-1 py-3 px-4 rounded-xl bg-primary text-white hover:bg-red-600 transition-colors font-bold" wire:click="applyDiscount">
+                    Terapkan (Enter)
+                </button>
+            </div>
+        </div>
+    </div>
+@endif
+
+<!-- Item Discount Modal -->
+@if($showItemDiscountModal)
+    <div class="custom-modal-backdrop" wire:click.self="closeModal" x-data @keydown.window.escape="$wire.closeModal()">
+        <div class="custom-modal" wire:click.stop style="max-width: 400px;">
+            <div class="p-5 border-b border-gray-200 bg-slate-50">
+                <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <x-heroicon-o-tag class="w-6 h-6 text-yellow-500" /> Diskon Item
+                </h3>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- Toggle Type -->
+                <div class="flex bg-slate-200 p-1 rounded-lg">
+                    <button class="flex-1 py-2 rounded-md text-sm font-bold transition-all {{ $itemDiscountType == 0 ? 'bg-primary text-white shadow' : 'text-gray-600' }}" wire:click="$set('itemDiscountType', 0)">
+                        Nominal (Rp)
+                    </button>
+                    <button class="flex-1 py-2 rounded-md text-sm font-bold transition-all {{ $itemDiscountType == 1 ? 'bg-primary text-white shadow' : 'text-gray-600' }}" wire:click="$set('itemDiscountType', 1)">
+                        Persen (%)
+                    </button>
+                </div>
+                
+                <input 
+                    type="number" 
+                    wire:model="itemDiscountValue"
+                    class="w-full bg-white border border-gray-300 rounded-lg p-3 text-slate-900 text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent text-center"
+                    placeholder="0"
+                    x-init="$nextTick(() => $el.focus())"
+                    wire:keydown.enter="applyItemDiscount"
+                >
+                <p class="text-xs text-center text-gray-600">
+                    Kosongkan atau isi 0 untuk menghapus diskon manual.
+                </p>
+            </div>
+            <div class="p-5 border-t border-gray-200 flex gap-3 bg-slate-50">
+                <button class="flex-1 py-3 px-4 rounded-xl border border-gray-300 text-slate-700 hover:bg-slate-100 transition-colors font-bold" wire:click="closeModal">
+                    Batal
+                </button>
+                <button class="flex-1 py-3 px-4 rounded-xl bg-primary text-white hover:bg-red-600 transition-colors font-bold" wire:click="applyItemDiscount">
+                    Simpan
+                </button>
             </div>
         </div>
     </div>

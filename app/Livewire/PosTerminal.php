@@ -46,8 +46,14 @@ class PosTerminal extends Component
     public $amountPaid = '';
     public $change = 0;
 
-    // Discount modal
+    // Discount modal (Global)
     public bool $showDiscountModal = false;
+    
+    // Item Discount Modal
+    public bool $showItemDiscountModal = false;
+    public ?int $editingCartIndex = null;
+    public $itemDiscountValue = '';
+    public int $itemDiscountType = 0; // 0 = nominal, 1 = percentage
 
     // Profile modal
     public bool $showProfileModal = false;
@@ -167,6 +173,7 @@ class PosTerminal extends Component
                 'image' => $product->image,
                 'stock' => $product->stock,
                 'discount_info' => null, // 'Global 10%' or 'Special $5'
+                'manual_discount' => false, // key for manual override
             ];
         }
 
@@ -218,6 +225,12 @@ class PosTerminal extends Component
         $specialDiscounts = $this->customer->specialDiscounts->keyBy('product_id');
 
         foreach ($this->cart as &$item) {
+            // Skip manual overrides
+            if (isset($item['manual_discount']) && $item['manual_discount']) {
+                $item['total'] = $item['quantity'] * $item['price'];
+                continue;
+            }
+
             $productId = $item['product_id'];
             $newPrice = $item['original_price'];
             $info = null;
@@ -346,7 +359,9 @@ class PosTerminal extends Component
     {
         $this->showCheckoutModal = false;
         $this->showDiscountModal = false;
+        $this->showItemDiscountModal = false;
         $this->showProfileModal = false;
+        $this->editingCartIndex = null;
     }
 
     public function setPaymentMethod(string $method)
@@ -392,6 +407,56 @@ class PosTerminal extends Component
         $this->calculateTotals();
         $this->showDiscountModal = false;
         $this->dispatch('notify', type: 'success', message: 'Diskon diterapkan');
+    }
+
+    public function openItemDiscountModal($index)
+    {
+        if (isset($this->cart[$index])) {
+            $this->editingCartIndex = $index;
+            $this->itemDiscountType = 0;
+            $this->itemDiscountValue = '';
+            $this->showItemDiscountModal = true;
+        }
+    }
+
+    public function applyItemDiscount()
+    {
+        if ($this->editingCartIndex !== null && isset($this->cart[$this->editingCartIndex])) {
+            $index = $this->editingCartIndex;
+            $originalPrice = $this->cart[$index]['original_price'];
+            $newPrice = $originalPrice;
+            $info = '';
+
+            if ((float)$this->itemDiscountValue > 0) {
+                 if ($this->itemDiscountType == 1) {
+                    // Percentage
+                    $newPrice = max(0, $originalPrice * (1 - ((float)$this->itemDiscountValue / 100)));
+                    $info = 'Manual -' . $this->itemDiscountValue . '%';
+                } else {
+                    // Fixed
+                    $newPrice = max(0, $originalPrice - (float)$this->itemDiscountValue);
+                    $info = 'Manual -Rp' . number_format((float)$this->itemDiscountValue, 0);
+                }
+                $this->cart[$index]['price'] = $newPrice;
+                $this->cart[$index]['discount_info'] = $info;
+                $this->cart[$index]['manual_discount'] = true;
+            } else {
+                // Remove manual discount if value is 0 or empty
+                $this->cart[$index]['price'] = $originalPrice;
+                $this->cart[$index]['discount_info'] = null;
+                $this->cart[$index]['manual_discount'] = false;
+                
+                // Re-apply auto discounts if any
+                if ($this->customer) {
+                    $this->applyCustomerDiscounts();
+                }
+            }
+            
+            $this->cart[$index]['total'] = $this->cart[$index]['quantity'] * $this->cart[$index]['price'];
+            $this->calculateTotals();
+            $this->closeModal();
+            $this->dispatch('notify', type: 'success', message: 'Harga item diperbarui');
+        }
     }
 
     public function toggleTax()
