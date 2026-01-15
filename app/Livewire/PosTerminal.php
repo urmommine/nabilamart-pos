@@ -23,7 +23,7 @@ class PosTerminal extends Component
     public string $search = '';
     public ?int $selectedCategory = null;
     public int $perPage = 30;
-    
+
     // Customer
     public ?int $selectedCustomerId = null;
     public ?Customer $customer = null;
@@ -48,7 +48,7 @@ class PosTerminal extends Component
 
     // Discount modal (Global)
     public bool $showDiscountModal = false;
-    
+
     // Item Discount Modal
     public bool $showItemDiscountModal = false;
     public ?int $editingCartIndex = null;
@@ -104,7 +104,7 @@ class PosTerminal extends Component
     public function render()
     {
         $categories = Category::active()->withCount('products')->get();
-        
+
         $products = Product::query()
             ->active()
             ->when($this->search, fn($q) => $q->search($this->search))
@@ -140,7 +140,7 @@ class PosTerminal extends Component
     public function addToCart(int $productId)
     {
         $product = Product::find($productId);
-        
+
         if (!$product || !$product->is_active) {
             $this->dispatch('notify', type: 'error', message: 'Produk tidak ditemukan');
             return;
@@ -204,7 +204,8 @@ class PosTerminal extends Component
 
     public function applyCustomerDiscounts()
     {
-        if (empty($this->cart)) return;
+        if (empty($this->cart))
+            return;
 
         // Reset all to original price first
         foreach ($this->cart as &$item) {
@@ -271,12 +272,11 @@ class PosTerminal extends Component
     {
         if (isset($this->cart[$index])) {
             $product = Product::find($this->cart[$index]['product_id']);
-            
+
             if ($product && $this->cart[$index]['quantity'] < $product->stock) {
                 $this->cart[$index]['quantity']++;
-                $this->cart[$index]['quantity']++;
                 $this->cart[$index]['total'] = $this->cart[$index]['quantity'] * $this->cart[$index]['price'];
-                $this->applyCustomerDiscounts(); 
+                $this->applyCustomerDiscounts();
                 $this->calculateTotals();
             } else {
                 $this->dispatch('notify', type: 'warning', message: 'Stok tidak mencukupi');
@@ -320,7 +320,7 @@ class PosTerminal extends Component
     public function calculateTotals()
     {
         $this->subtotal = array_sum(array_column($this->cart, 'total'));
-        
+
         // Calculate discount
         if ($this->discountType == 1 && (float) $this->discountValue > 0) {
             // Percentage discount
@@ -367,7 +367,7 @@ class PosTerminal extends Component
     public function setPaymentMethod(string $method)
     {
         $this->paymentMethod = $method;
-        
+
         // For non-cash, set amount paid to exact total
         if ($method !== 'cash') {
             $this->amountPaid = $this->total;
@@ -427,15 +427,15 @@ class PosTerminal extends Component
             $newPrice = $originalPrice;
             $info = '';
 
-            if ((float)$this->itemDiscountValue > 0) {
-                 if ($this->itemDiscountType == 1) {
+            if ((float) $this->itemDiscountValue > 0) {
+                if ($this->itemDiscountType == 1) {
                     // Percentage
-                    $newPrice = max(0, $originalPrice * (1 - ((float)$this->itemDiscountValue / 100)));
+                    $newPrice = max(0, $originalPrice * (1 - ((float) $this->itemDiscountValue / 100)));
                     $info = 'Manual -' . $this->itemDiscountValue . '%';
                 } else {
                     // Fixed
-                    $newPrice = max(0, $originalPrice - (float)$this->itemDiscountValue);
-                    $info = 'Manual -Rp' . number_format((float)$this->itemDiscountValue, 0);
+                    $newPrice = max(0, $originalPrice - (float) $this->itemDiscountValue);
+                    $info = 'Manual -Rp' . number_format((float) $this->itemDiscountValue, 0);
                 }
                 $this->cart[$index]['price'] = $newPrice;
                 $this->cart[$index]['discount_info'] = $info;
@@ -445,13 +445,13 @@ class PosTerminal extends Component
                 $this->cart[$index]['price'] = $originalPrice;
                 $this->cart[$index]['discount_info'] = null;
                 $this->cart[$index]['manual_discount'] = false;
-                
+
                 // Re-apply auto discounts if any
                 if ($this->customer) {
                     $this->applyCustomerDiscounts();
                 }
             }
-            
+
             $this->cart[$index]['total'] = $this->cart[$index]['quantity'] * $this->cart[$index]['price'];
             $this->calculateTotals();
             $this->closeModal();
@@ -537,7 +537,7 @@ class PosTerminal extends Component
                 $this->dispatch('printReceipt', orderId: $order->id);
                 $this->dispatch('notify', type: 'warning', message: 'Printer ESC/POS gagal, menggunakan browser print');
             }
-            
+
             $this->dispatch('notify', type: 'success', message: 'Transaksi berhasil! Invoice: ' . $order->invoice_number);
 
         } catch (\Exception $e) {

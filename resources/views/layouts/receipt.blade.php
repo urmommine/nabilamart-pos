@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,7 +25,7 @@
             margin: 0 auto;
             background: white;
             padding: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
         .header {
@@ -142,7 +143,9 @@
         }
 
         @media print {
-            html, body {
+
+            html,
+            body {
                 width: 100%;
                 background: white;
                 padding: 0;
@@ -165,7 +168,9 @@
         }
     </style>
 </head>
+
 <body>
     {{ $slot }}
 </body>
+
 </html>

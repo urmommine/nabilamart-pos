@@ -77,12 +77,12 @@
 
     <script>
         document.addEventListener('livewire:initialized', () => {
-             // Optional: If you want to use Livewire events
+            // Optional: If you want to use Livewire events
         });
-        
+
         // Auto print immediately when loaded
-        window.onload = function() {
-            setTimeout(function() {
+        window.onload = function () {
+            setTimeout(function () {
                 window.print();
                 // Check if we are inside an iframe
                 if (window.self !== window.top) {
