@@ -219,6 +219,11 @@ class ProductResource extends Resource
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'warning';
+        return static::getModel()::where('stock', '<=', 5)->count() > 0 ? 'warning' : 'success';
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return 'Produk dengan stok kurang dari ' . static::getModel()::min('min_stock');
     }
 }

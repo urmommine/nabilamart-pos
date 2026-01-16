@@ -61,6 +61,9 @@
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
         rel="stylesheet" />
 
+    <!-- Printer JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bluetooth-print-js@1.0/index.min.js"></script>
+
     <style>
         /* Hide scrollbar for Chrome, Safari and Opera */
         .no-scrollbar::-webkit-scrollbar {

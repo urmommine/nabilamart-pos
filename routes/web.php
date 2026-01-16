@@ -4,6 +4,7 @@ use App\Livewire\PosTerminal;
 use App\Http\Controllers\ReceiptController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use App\Livewire\Receipt;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,7 +28,7 @@ Route::get('/pos/login', \App\Livewire\Auth\PosLogin::class)->name('login')->mid
 // POS Routes (requires authentication)
 Route::middleware(['auth'])->group(function () {
     Route::get('/pos', PosTerminal::class)->name('pos');
-    Route::get('/pos/receipt/{order}', App\Livewire\Receipt::class)->name('pos.receipt');
+    Route::get('/pos/receipt/{order}', [ReceiptController::class, 'show'])->name('pos.receipt');
     Route::get('/pos/receipt/{order}/print', [ReceiptController::class, 'print'])->name('pos.receipt.print');
 });
 

@@ -85,17 +85,18 @@ class StoreSettings extends Page
                             ->options([
                                 'usb' => 'USB / Local',
                                 'network' => 'Network (IP)',
+                                'bluetooth' => 'Bluetooth (Printer-JS)',
                             ])
                             ->default('usb')
                             ->live(),
                         Forms\Components\TextInput::make('printer_name')
                             ->label('Nama Printer')
                             ->helperText('Nama printer di Windows, misal: POS-58')
-                            ->visible(fn (Forms\Get $get) => $get('printer_type') === 'usb'),
+                            ->visible(fn(Forms\Get $get) => $get('printer_type') === 'usb'),
                         Forms\Components\TextInput::make('printer_ip')
                             ->label('IP Address Printer')
                             ->helperText('Contoh: 192.168.1.100')
-                            ->visible(fn (Forms\Get $get) => $get('printer_type') === 'network'),
+                            ->visible(fn(Forms\Get $get) => $get('printer_type') === 'network'),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Pengaturan Struk')

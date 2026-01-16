@@ -33,7 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->colors([
-                'primary' => Color::Lime,
+                'primary' => Color::Emerald,
                 // 'danger' => Color::Red,
                 // 'gray' => Color::Slate,
                 // 'info' => Color::Cyan,
@@ -42,7 +42,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             // ->spa()
             ->font('Inter')
-            ->brandName(fn () => StoreSetting::get(StoreSetting::STORE_NAME, 'Antigravity POS'))
+            ->brandName(fn() => StoreSetting::get(StoreSetting::STORE_NAME, 'Antigravity POS'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([

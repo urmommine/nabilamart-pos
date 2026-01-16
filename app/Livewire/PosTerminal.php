@@ -2,12 +2,13 @@
 
 namespace App\Livewire;
 
+use App\Http\Controllers\ReceiptController;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\StoreSetting;
-use App\Services\ReceiptPrinter;
+
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -62,11 +63,15 @@ class PosTerminal extends Component
     public string $profilePassword = '';
     public string $profilePasswordConfirmation = '';
 
+    // Printer
+    public string $printerType = 'usb';
+
     public function mount()
     {
         // Load tax percentage from settings
         $this->defaultTax = (float) StoreSetting::get(StoreSetting::TAX_PERCENTAGE, 0);
         $this->tax = $this->defaultTax;
+        $this->printerType = StoreSetting::get(StoreSetting::PRINTER_TYPE, 'usb');
     }
 
     public function openProfileModal()
@@ -527,15 +532,11 @@ class PosTerminal extends Component
             $this->calculateTotals();
             $this->showCheckoutModal = false;
 
-            // Try direct ESC/POS printing first (silent, no dialog)
-            try {
-                $printer = new ReceiptPrinter();
-                $printer->printReceipt($order);
-                $this->dispatch('notify', type: 'success', message: 'Struk dicetak!');
-            } catch (\Exception $e) {
-                // Fallback to browser print if ESC/POS fails
-                $this->dispatch('printReceipt', orderId: $order->id);
-                $this->dispatch('notify', type: 'warning', message: 'Printer ESC/POS gagal, menggunakan browser print');
+            // Trigger print via Controller (Client-side fetch)
+            if ($this->printerType === 'bluetooth') {
+                $this->dispatch('printBluetoothReceipt', data: $this->getReceiptData($order));
+            } else {
+                $this->dispatch('triggerDirectPrint', orderId: $order->id);
             }
 
             $this->dispatch('notify', type: 'success', message: 'Transaksi berhasil! Invoice: ' . $order->invoice_number);
@@ -544,5 +545,34 @@ class PosTerminal extends Component
             DB::rollBack();
             $this->dispatch('notify', type: 'error', message: 'Terjadi kesalahan: ' . $e->getMessage());
         }
+    }
+    protected function getReceiptData(Order $order)
+    {
+        $order->load(['items', 'customer']);
+        return [
+            'storeName' => StoreSetting::get(StoreSetting::STORE_NAME, 'POS Store'),
+            'storeAddress' => StoreSetting::get(StoreSetting::STORE_ADDRESS, ''),
+            'storePhone' => StoreSetting::get(StoreSetting::STORE_PHONE, ''),
+            'invoice' => $order->invoice_number,
+            'date' => $order->created_at->format('d-m-Y H:i'),
+            'cashier' => Auth::user()->name,
+            'customer' => $order->customer ? $order->customer->name : 'Walk-in Customer',
+            'items' => $order->items->map(function ($item) {
+                return [
+                    'name' => $item->product_name,
+                    'qty' => $item->quantity,
+                    'price' => $item->unit_price,
+                    'total' => $item->total_price,
+                ];
+            }),
+            'subtotal' => $order->subtotal,
+            'discount' => $order->discount,
+            'tax' => $order->tax,
+            'total' => $order->total_amount,
+            'payment_method' => ucfirst($order->payment_method),
+            'amount_paid' => $order->amount_paid,
+            'change' => $order->change,
+            'footer' => StoreSetting::get(StoreSetting::RECEIPT_FOOTER, 'Terima Kasih'),
+        ];
     }
 }

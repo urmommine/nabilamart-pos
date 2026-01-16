@@ -7,6 +7,7 @@ use App\Models\StoreSetting;
 use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
 use Mike42\Escpos\PrintConnectors\FilePrintConnector;
+use Mike42\Escpos\PrintConnectors\BluetoothPrintConnector;
 use Mike42\Escpos\Printer;
 use Mike42\Escpos\EscposImage;
 
@@ -29,7 +30,7 @@ class ReceiptPrinter
                     throw new \Exception('IP Printer tidak dikonfigurasi');
                 }
                 return new NetworkPrintConnector($printerIp, 9100);
-
+            
             case 'usb':
             default:
                 if (empty($printerName)) {

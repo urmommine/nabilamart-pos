@@ -31,6 +31,15 @@
                     Tax</span>
             </div>
             <div class="flex gap-2">
+                <!-- Connect Printer Button (Bluetooth only) -->
+                 @if($printerType === 'bluetooth')
+                    <button onclick="connectPrinter()"
+                        class="flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-surface-light dark:bg-surface-dark text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-[#382929] transition-colors border border-border-light/50 dark:border-border-dark/50"
+                        title="Connect Bluetooth Printer">
+                        <span class="material-symbols-outlined {{-- active class? --}}">bluetooth</span>
+                    </button>
+                @endif
+
                 <!-- Theme Toggle Button -->
                 <button @click="darkMode = !darkMode"
                     class="flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-surface-light dark:bg-surface-dark text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-[#382929] transition-colors border border-border-light/50 dark:border-border-dark/50"
@@ -677,19 +686,138 @@
     </div>
 
     <script>
-        document.addEventListener('livewire:init', () => {
-            Livewire.on('printReceipt', (data) => {
-                let iframe = document.getElementById('receipt-frame');
-                if (!iframe) {
-                    iframe = document.createElement('iframe');
-                    iframe.id = 'receipt-frame';
-                    iframe.style.position = 'absolute';
-                    iframe.style.width = '0px';
-                    iframe.style.height = '0px';
-                    iframe.style.border = 'none';
-                    document.body.appendChild(iframe);
+        // Global Printer Instance
+        let printerInstance = new PrintPlugin('58mm');
+        window.btPrinter = null;
+
+        function connectPrinter() {
+            printerInstance.connectToPrint({
+                onReady: (print) => {
+                    window.btPrinter = print;
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Printer Bluetooth Terhubung!' } }));
+                    console.log("Printer Connected");
+                },
+                onFailed: (message) => {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Gagal Konek: ' + message } }));
+                    console.error(message);
                 }
-                iframe.src = '/pos/receipt/' + data.orderId;
+            });
+        }
+
+        document.addEventListener('livewire:init', () => {
+            // Livewire.on('printReceipt', (data) => {
+            //     let iframe = document.getElementById('receipt-frame');
+            //     if (!iframe) {
+            //         iframe = document.createElement('iframe');
+            //         iframe.id = 'receipt-frame';
+            //         iframe.style.position = 'absolute';
+            //         iframe.style.width = '0px';
+            //         iframe.style.height = '0px';
+            //         iframe.style.border = 'none';
+            //         document.body.appendChild(iframe);
+            //     }
+            //     iframe.src = '/pos/receipt/' + data.orderId;
+            // });
+
+            Livewire.on('printBluetoothReceipt', async (data) => {
+                // data might be wrapped in an array [data] depending on Livewire version/dispatch
+                // If dispatched as named param "data", it's usually the first arg.
+                let receipt = data.data || data; // handle potential wrapper
+
+                if (!window.btPrinter) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Printer Belum Terhubung! Klik tombol Bluetooth diatas.' } }));
+                    return;
+                }
+
+                let print = window.btPrinter;
+
+                try {
+                    // Header
+                    await print.writeText(receipt.storeName, { align: "center", bold: true, size: "double" });
+                    if(receipt.storeAddress) await print.writeText(receipt.storeAddress, { align: "center" });
+                    if(receipt.storePhone) await print.writeText(receipt.storePhone, { align: "center" });
+                    
+                    await print.writeLineBreak();
+                    await print.writeText("No: " + receipt.invoice, { align: "left" });
+                    await print.writeText("Tgl: " + receipt.date, { align: "left" });
+                    await print.writeText("Kasir: " + receipt.cashier, { align: "left" });
+                    await print.writeText("Pelanggan: " + receipt.customer, { align: "left" });
+                    await print.writeDashLine();
+
+                    // Items
+                    for (let item of receipt.items) {
+                        await print.writeText(item.name, { align: "left" });
+                        // Format: 2x @10.000   20.000
+                        let line2_left = item.qty + "x @" + new Intl.NumberFormat('id-ID').format(item.price);
+                        let line2_right = new Intl.NumberFormat('id-ID').format(item.total);
+                        await print.writeTextWith2Column(line2_left, line2_right);
+                    }
+                    await print.writeDashLine();
+
+                    // Totals
+                    await print.writeTextWith2Column("Subtotal", new Intl.NumberFormat('id-ID').format(receipt.subtotal));
+                    if (receipt.discount > 0) {
+                        await print.writeTextWith2Column("Diskon", "-" + new Intl.NumberFormat('id-ID').format(receipt.discount));
+                    }
+                    if (receipt.tax > 0) {
+                        await print.writeTextWith2Column("Pajak", new Intl.NumberFormat('id-ID').format(receipt.tax));
+                    }
+                    
+                    // Total Large
+                    await print.writeLineBreak();
+                    await print.writeText("TOTAL", { align: "center", bold: true });
+                    await print.writeText("Rp " + new Intl.NumberFormat('id-ID').format(receipt.total), { align: "center", bold: true, size: "double" });
+                    await print.writeLineBreak();
+
+                    await print.writeTextWith2Column("Tunai", new Intl.NumberFormat('id-ID').format(receipt.amount_paid));
+                    await print.writeTextWith2Column("Kembali", new Intl.NumberFormat('id-ID').format(receipt.change));
+
+                    // Footer
+                    await print.writeDashLine();
+                    await print.writeText(receipt.footer, { align: "center" });
+                    await print.writeLineBreak(3); // Feed
+
+                } catch (e) {
+                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Gagal Print: ' + e.message } }));
+                     // Reset printer if connection lost?
+                     // window.btPrinter = null; 
+                }
+            });
+
+            Livewire.on('triggerDirectPrint', (data) => {
+                fetch(`/pos/receipt/${data.orderId}/print`)
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            window.dispatchEvent(new CustomEvent('notify', { 
+                                detail: { type: 'success', message: result.message } 
+                            }));
+                        } else {
+                            throw new Error(result.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Print Error:', error);
+                        // Fallback to browser print logic (calling the existing printReceipt handler essentially)
+                        // Since we can't easily emit back to self, we just replicate the logic or dispatch event to window
+                        
+                        // Dispatch internal event or just run logic
+                        let iframe = document.getElementById('receipt-frame');
+                        if (!iframe) {
+                            iframe = document.createElement('iframe');
+                            iframe.id = 'receipt-frame';
+                            iframe.style.position = 'absolute';
+                            iframe.style.width = '0px';
+                            iframe.style.height = '0px';
+                            iframe.style.border = 'none';
+                            document.body.appendChild(iframe);
+                        }
+                        iframe.src = '/pos/receipt/' + data.orderId;
+
+                        window.dispatchEvent(new CustomEvent('notify', { 
+                            detail: { type: 'warning', message: 'Print Direct Gagal' } 
+                        }));
+                    });
             });
 
             // Keyboard Shortcuts

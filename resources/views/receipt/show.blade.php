@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,7 +25,7 @@
             margin: 0 auto;
             background: white;
             padding: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
         .header {
@@ -135,16 +136,30 @@
             color: white;
         }
 
+        /* Define page size for thermal printer (58mm width) */
+        @page {
+            size: 58mm auto;
+            margin: 0;
+        }
+
         @media print {
+
+            html,
             body {
+                width: 100%;
                 background: white;
                 padding: 0;
+                margin: 0;
+                display: flex;
+                justify-content: center;
             }
 
             .receipt {
                 box-shadow: none;
-                width: 100%;
-                max-width: 80mm;
+                width: 58mm;
+                max-width: 58mm;
+                padding: 2mm;
+                margin: 0 auto;
             }
 
             .actions {
@@ -153,6 +168,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="receipt">
         <div class="header">
@@ -232,11 +248,12 @@
 
     <script>
         // Auto print on load
-        window.onload = function() {
-            setTimeout(function() {
+        window.onload = function () {
+            setTimeout(function () {
                 window.print();
             }, 500);
         };
     </script>
 </body>
+
 </html>
