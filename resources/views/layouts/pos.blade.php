@@ -62,7 +62,8 @@
         rel="stylesheet" />
 
     <!-- Printer JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bluetooth-print-js@1.0/index.min.js"></script>
+    <!-- Printer JS (PrintHub) -->
+    <script src="https://cdn.jsdelivr.net/npm/printhub@latest/dist/index.global.js"></script>
 
     <style>
         /* Hide scrollbar for Chrome, Safari and Opera */

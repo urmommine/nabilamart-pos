@@ -29,12 +29,10 @@ class ProductImporter extends Importer
             ImportColumn::make('category')
                 ->label('Kategori')
                 ->relationship(resolveUsing: function (string $state): ?Category {
-                    return Category::query()
-                        ->where('name', $state)
-                        ->first() ?? Category::create([
-                            'name' => $state,
-                            'is_active' => true,
-                        ]);
+                    return Category::firstOrCreate(
+                        ['name' => trim($state)],
+                        ['is_active' => true]
+                    );
                 }),
             ImportColumn::make('description')
                 ->label('Deskripsi'),
@@ -56,13 +54,11 @@ class ProductImporter extends Importer
             ImportColumn::make('min_stock')
                 ->label('Stok Minimum')
                 ->numeric()
-                ->rules(['integer', 'min:0'])
-                ->default(5),
+                ->rules(['integer', 'min:0']),
             ImportColumn::make('is_active')
                 ->label('Aktif')
                 ->boolean()
-                ->rules(['boolean'])
-                ->default(true),
+                ->rules(['boolean']),
         ];
     }
 
@@ -76,10 +72,10 @@ class ProductImporter extends Importer
 
     public static function getCompletedNotificationBody(Import $import): string
     {
-        $body = 'Your product import has completed and ' . number_format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' imported.';
+        $body = 'Import produk berhasil dan ' . number_format($import->successful_rows) . ' ' . str('baris')->plural($import->successful_rows) . ' berhasil diimpor.';
 
         if ($failedRowsCount = $import->getFailedRowsCount()) {
-            $body .= ' ' . number_format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to import.';
+            $body .= ' ' . number_format($failedRowsCount) . ' ' . str('baris')->plural($failedRowsCount) . ' gagal diimpor.';
         }
 
         return $body;

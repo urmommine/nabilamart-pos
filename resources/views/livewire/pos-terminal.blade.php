@@ -687,19 +687,41 @@
 
     <script>
         // Global Printer Instance
-        let printerInstance = new PrintPlugin('58mm');
+        let printerInstance = null;
         window.btPrinter = null;
 
         function connectPrinter() {
+            console.log("Connect button clicked");
+            if (typeof PrintHub === 'undefined') {
+                console.error("PrintHub library not loaded");
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Library PrintHub belum siap. Coba refresh halaman.' } }));
+                return;
+            }
+
+            if (!printerInstance) {
+                try {
+                    // PrintHub Init
+                    printerInstance = new PrintHub.init({
+                        paperSize: "58",
+                        printerType: "bluetooth"
+                    });
+                    console.log("PrintHub instance created");
+                } catch (e) {
+                    console.error("Error creating printer instance:", e);
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Error init printer: ' + e.message } }));
+                    return;
+                }
+            }
+
             printerInstance.connectToPrint({
                 onReady: (print) => {
                     window.btPrinter = print;
                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Printer Bluetooth Terhubung!' } }));
-                    console.log("Printer Connected");
+                    console.log("Printer Connected Successfully", print);
                 },
                 onFailed: (message) => {
                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Gagal Konek: ' + message } }));
-                    console.error(message);
+                    console.error("Connection Failed:", message);
                 }
             });
         }
@@ -815,7 +837,7 @@
                         iframe.src = '/pos/receipt/' + data.orderId;
 
                         window.dispatchEvent(new CustomEvent('notify', { 
-                            detail: { type: 'warning', message: 'Print Direct Gagal' } 
+                            detail: { type: 'warning', message: 'Direct Print Gagal' } 
                         }));
                     });
             });

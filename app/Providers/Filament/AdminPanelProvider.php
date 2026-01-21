@@ -81,7 +81,11 @@ class AdminPanelProvider extends PanelProvider
                     ->label('Buka Kasir (POS)')
                     ->url('/pos')
                     ->icon('heroicon-o-computer-desktop'),
-            ]);
+            ])
+            ->renderHook(
+                'panels::body.end',
+                fn() => view('filament.hooks.print-scripts'),
+            );
     }
 }
 

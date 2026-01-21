@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderResource\Pages;
 use App\Models\Order;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -73,13 +74,13 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('payment_method')
                     ->label('Metode Bayar')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'cash' => 'success',
                         'qris' => 'info',
                         'transfer' => 'warning',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
                         'cash' => 'Tunai',
                         'qris' => 'QRIS',
                         'transfer' => 'Transfer',
@@ -88,13 +89,13 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('payment_status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'paid' => 'success',
                         'pending' => 'warning',
                         'cancelled' => 'danger',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
                         'paid' => 'Lunas',
                         'pending' => 'Pending',
                         'cancelled' => 'Dibatalkan',
@@ -123,10 +124,54 @@ class OrderResource extends Resource
                     ]),
                 Tables\Filters\Filter::make('today')
                     ->label('Hari Ini')
-                    ->query(fn ($query) => $query->whereDate('created_at', today())),
+                    ->query(fn($query) => $query->whereDate('created_at', today())),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+                Tables\Actions\Action::make('print')
+                    ->label('Cetak Invoice')
+                    ->icon('heroicon-o-printer')
+                    ->action(function (Order $record, \Filament\Tables\Actions\Action $action) {
+                        $record->load(['items', 'user']);
+
+                        $storeSettings = [
+                            'name' => \App\Models\StoreSetting::get(\App\Models\StoreSetting::STORE_NAME, 'POS Store'),
+                            'address' => \App\Models\StoreSetting::get(\App\Models\StoreSetting::STORE_ADDRESS, ''),
+                            'phone' => \App\Models\StoreSetting::get(\App\Models\StoreSetting::STORE_PHONE, ''),
+                            'footer' => \App\Models\StoreSetting::get(\App\Models\StoreSetting::RECEIPT_FOOTER, 'Terima Kasih!'),
+                        ];
+
+                        $items = $record->items->map(function ($item) {
+                            return [
+                                'name' => $item->product_name,
+                                'qty' => $item->quantity,
+                                'price' => $item->unit_price,
+                                'total' => $item->total_price,
+                            ];
+                        })->toArray();
+
+                        $receiptData = [
+                            'storeName' => $storeSettings['name'],
+                            'storeAddress' => $storeSettings['address'],
+                            'storePhone' => $storeSettings['phone'],
+                            'footer' => $storeSettings['footer'],
+                            'invoice' => $record->invoice_number,
+                            'date' => $record->created_at->format('d/m/Y H:i'),
+                            'cashier' => $record->user->name ?? '-',
+                            'customer' => $record->customer->name ?? 'Walk-in Customer',
+                            'items' => $items,
+                            'subtotal' => $record->subtotal,
+                            'discount' => $record->discount,
+                            'tax' => $record->tax,
+                            'total' => $record->total_amount,
+                            'amount_paid' => $record->amount_paid,
+                            'change' => $record->change,
+                            'payment_method' => $record->payment_method,
+                        ];
+
+                        $action->getLivewire()->dispatch('print-invoice', data: $receiptData);
+                    })
+                    ->color('success'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
