@@ -10,9 +10,10 @@ Built with **Laravel 12** and **Filament 3.3**, this system provides a seamless 
 
 ### 🏢 Inventory Management
 - **Smart Tracking**: Real-time stock level monitoring with SKU and barcode integration.
+- **Bulk Data Entry**: **Import/Export** products via CSV to save hours of manual data entry.
 - **Stock Alerts**: Automatic notifications and dashboard widgets for low-stock items.
 - **Categorization**: Organize products efficiently with a flexible category system.
-- **Cost Tracking**: Monitor purchase vs. selling prices to calculate profit margins automatically.
+- **Cost Tracking**: Monitor purchase vs. selling prices for accurate profit analysis.
 
 ### 💰 Next-Gen Point of Sale (POS)
 - **High-Speed Checkout**: Livewire-powered POS terminal for a desktop-app feel.
@@ -42,6 +43,9 @@ Built with **Laravel 12** and **Filament 3.3**, this system provides a seamless 
 ### 🔔 Monitoring & Notifications
 - **Smart Notifications**: Real-time database and browser notifications for stock alerts and order status.
 - **Activity Monitoring**: Track which cashier is active and processing transactions.
+
+> [!TIP]
+> **Tired of adding products one by one?** Use the **Import** feature in the `Produk` menu to upload hundreds of items at once via CSV. It significantly minimizes the time needed to get your store up and running!
 
 ---
 
