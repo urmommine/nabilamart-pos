@@ -86,6 +86,7 @@ class StoreSettings extends Page
                                 'usb' => 'USB / Local',
                                 'network' => 'Network (IP)',
                                 'bluetooth' => 'Bluetooth (Printer-JS)',
+                                'usb_web' => 'USB (WebUSB - PrintHub)',
                             ])
                             ->default('usb')
                             ->live(),

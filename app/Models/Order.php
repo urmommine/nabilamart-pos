@@ -57,10 +57,11 @@ class Order extends Model
     {
         $today = Carbon::today();
         $prefix = 'INV-' . $today->format('Ymd') . '-';
-        
-        // Get the last order of today
+
+        // Get the last order of today with locking to prevent concurrent collisions
         $lastOrder = self::where('invoice_number', 'like', $prefix . '%')
             ->orderBy('invoice_number', 'desc')
+            ->lockForUpdate()
             ->first();
 
         if ($lastOrder) {
@@ -129,7 +130,8 @@ class Order extends Model
     {
         return $this->items->sum(function ($item) {
             $product = $item->product;
-            if ($product) {
+            // Only calculate profit for products with cost tracking enabled
+            if ($product && $product->track_cost) {
                 return ($item->unit_price - $product->purchase_price) * $item->quantity;
             }
             return 0;
@@ -161,7 +163,7 @@ class Order extends Model
     public function scopeThisMonth($query)
     {
         return $query->whereMonth('created_at', Carbon::now()->month)
-                     ->whereYear('created_at', Carbon::now()->year);
+            ->whereYear('created_at', Carbon::now()->year);
     }
 
     /**

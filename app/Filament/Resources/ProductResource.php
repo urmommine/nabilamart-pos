@@ -11,6 +11,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Support\Colors\Color;
+use Filament\Forms\Get;
 
 class ProductResource extends Resource
 {
@@ -67,12 +68,22 @@ class ProductResource extends Resource
 
                         Forms\Components\Section::make('Harga & Stok')
                             ->schema([
+                                Forms\Components\Toggle::make('unlimited_stock')
+                                    ->label('Stok Tak Terbatas')
+                                    ->helperText('Aktifkan untuk produk tanpa batasan stok (contoh: jasa)')
+                                    ->default(false)
+                                    ->live(),
+                                Forms\Components\Toggle::make('track_cost')
+                                    ->label('Lacak Harga Modal')
+                                    ->helperText('Aktifkan untuk menghitung profit akurat di laporan')
+                                    ->default(true)
+                                    ->live(),
                                 Forms\Components\TextInput::make('purchase_price')
                                     ->label('Harga Beli (Modal)')
                                     ->numeric()
                                     ->prefix('Rp')
-                                    ->required()
-                                    ->default(0),
+                                    ->default(0)
+                                    ->visible(fn(Get $get): bool => $get('track_cost') ?? true),
                                 Forms\Components\TextInput::make('selling_price')
                                     ->label('Harga Jual')
                                     ->numeric()
@@ -82,14 +93,14 @@ class ProductResource extends Resource
                                 Forms\Components\TextInput::make('stock')
                                     ->label('Stok Saat Ini')
                                     ->numeric()
-                                    ->required()
-                                    ->default(0),
+                                    ->default(0)
+                                    ->visible(fn(Get $get): bool => !($get('unlimited_stock') ?? false)),
                                 Forms\Components\TextInput::make('min_stock')
                                     ->label('Stok Minimum (Alert)')
                                     ->numeric()
-                                    ->required()
                                     ->default(5)
-                                    ->helperText('Notifikasi akan muncul jika stok mencapai angka ini'),
+                                    ->helperText('Notifikasi akan muncul jika stok mencapai angka ini')
+                                    ->visible(fn(Get $get): bool => !($get('unlimited_stock') ?? false)),
                             ])->columns(2),
                     ])->columnSpan(['lg' => 2]),
 
@@ -131,7 +142,7 @@ class ProductResource extends Resource
                     ->label('Nama Produk')
                     ->searchable()
                     ->sortable()
-                    ->description(fn (Product $record): string => $record->sku),
+                    ->description(fn(Product $record): string => $record->sku),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Kategori')
                     ->badge()
@@ -144,11 +155,20 @@ class ProductResource extends Resource
                     ->label('Stok')
                     ->sortable()
                     ->badge()
-                    ->color(fn (Product $record): string => match(true) {
+                    ->formatStateUsing(
+                        fn(Product $record): string =>
+                        $record->unlimited_stock ? '∞' : (string) $record->stock
+                    )
+                    ->color(fn(Product $record): string => match (true) {
+                        $record->unlimited_stock => 'info',
                         $record->stock <= 0 => 'danger',
                         $record->stock <= $record->min_stock => 'warning',
                         default => 'success',
                     }),
+                Tables\Columns\TextColumn::make('barcode')
+                    ->label('Barcode')
+                    ->searchable()
+                    ->hidden(true),
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Aktif')
                     ->boolean(),
@@ -169,7 +189,7 @@ class ProductResource extends Resource
                     ->falseLabel('Tidak Aktif'),
                 Tables\Filters\Filter::make('low_stock')
                     ->label('Stok Menipis')
-                    ->query(fn ($query) => $query->whereColumn('stock', '<=', 'min_stock')),
+                    ->query(fn($query) => $query->where('unlimited_stock', false)->whereColumn('stock', '<=', 'min_stock')),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -214,16 +234,18 @@ class ProductResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::where('stock', '<=', 5)->count() ?: null;
+        return static::getModel()::where('unlimited_stock', false)
+            ->where('stock', '<=', 5)->count() ?: null;
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return static::getModel()::where('stock', '<=', 5)->count() > 0 ? 'warning' : 'success';
+        return static::getModel()::where('unlimited_stock', false)
+            ->where('stock', '<=', 5)->count() > 0 ? 'warning' : 'success';
     }
 
     public static function getNavigationBadgeTooltip(): ?string
     {
-        return 'Produk dengan stok kurang dari ' . static::getModel()::min('min_stock');
+        return 'Produk dengan stok menipis (tidak termasuk stok tak terbatas)';
     }
 }

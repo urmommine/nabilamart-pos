@@ -8,7 +8,8 @@
             </div>
             <div>
                 <h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">
-                    {{ $storeName }}</h2>
+                    {{ $storeName }}
+                </h2>
                 <div class="flex items-center gap-2 mt-0.5">
                     <span class="block size-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
                     <span class="text-xs text-text-muted-light dark:text-text-muted-dark font-medium">Online •
@@ -31,12 +32,13 @@
                     Tax</span>
             </div>
             <div class="flex gap-2">
-                <!-- Connect Printer Button (Bluetooth only) -->
-                 @if($printerType === 'bluetooth')
+                <!-- Connect Printer Button (Bluetooth & USB Web) -->
+                @if($printerType === 'bluetooth' || $printerType === 'usb_web')
                     <button onclick="connectPrinter()"
                         class="flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-surface-light dark:bg-surface-dark text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-[#382929] transition-colors border border-border-light/50 dark:border-border-dark/50"
-                        title="Connect Bluetooth Printer">
-                        <span class="material-symbols-outlined {{-- active class? --}}">bluetooth</span>
+                        title="Connect Printer ({{ $printerType === 'bluetooth' ? 'Bluetooth' : 'USB' }})">
+                        <span
+                            class="material-symbols-outlined">{{ $printerType === 'bluetooth' ? 'bluetooth' : 'usb' }}</span>
                     </button>
                 @endif
 
@@ -70,9 +72,11 @@
                     @click="open = !open">
                     <div class="text-right hidden sm:block">
                         <p class="text-sm font-bold text-slate-900 dark:text-white leading-none">
-                            {{ auth()->user()->name }}</p>
+                            {{ auth()->user()->name }}
+                        </p>
                         <p class="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">
-                            {{ auth()->user()->email }}</p>
+                            {{ auth()->user()->email }}
+                        </p>
                     </div>
                     <!-- Initial Avatar -->
                     <div
@@ -153,6 +157,8 @@
                             <input
                                 class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 focus:border-primary border border-l-0 border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark h-full placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark px-4 text-base font-medium leading-normal transition-all"
                                 placeholder="Cari produk atau scan barcode (F2)" wire:model.live.debounce.300ms="search"
+                                wire:keydown.enter.prevent="handleBarcodeScan($event.target.value)"
+                                x-on:clear-search.window="$el.value = ''"
                                 id="search-input" />
                         </div>
                     </label>
@@ -166,7 +172,7 @@
                         <p class="text-sm font-bold leading-normal tracking-[0.015em]">Semua</p>
                     </button>
                     @foreach($categories as $category)
-                        <button
+                        <button wire:key="cat-{{ $category->id }}"
                             class="flex flex-col items-center justify-center border-b-[3px] {{ $selectedCategory === $category->id ? 'border-b-primary text-slate-900 dark:text-white' : 'border-b-transparent text-text-muted-light dark:text-text-muted-dark hover:text-slate-900 dark:hover:text-white hover:border-b-slate-300 dark:hover:border-b-white/20' }} pb-3 px-1 min-w-[60px] transition-all"
                             wire:click="selectCategory({{ $category->id }})">
                             <p class="text-sm font-bold leading-normal tracking-[0.015em]">{{ $category->name }}</p>
@@ -179,7 +185,8 @@
                 <div class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
                     @forelse($products as $product)
                         <!-- Product Card -->
-                        <div class="group cursor-pointer flex flex-col gap-3 p-3 rounded-xl bg-surface-light dark:bg-surface-dark border border-transparent hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-[#2a1f1f] transition-all duration-200 shadow-sm hover:shadow-lg hover:shadow-primary/5 {{ $product->stock <= 0 ? 'opacity-50 grayscale' : '' }}"
+                        <div wire:key="prod-{{ $product->id }}"
+                            class="group cursor-pointer flex flex-col gap-3 p-3 rounded-xl bg-surface-light dark:bg-surface-dark border border-transparent hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-[#2a1f1f] transition-all duration-200 shadow-sm hover:shadow-lg hover:shadow-primary/5 {{ $product->stock <= 0 ? 'opacity-50 grayscale' : '' }}"
                             wire:click="addToCart({{ $product->id }})">
                             <div
                                 class="relative w-full aspect-square bg-slate-200 dark:bg-[#382929] rounded-lg overflow-hidden flex items-center justify-center">
@@ -203,7 +210,8 @@
                             <div>
                                 <p
                                     class="text-slate-900 dark:text-white text-base font-bold leading-tight mb-1 group-hover:text-primary transition-colors line-clamp-2">
-                                    {{ $product->name }}</p>
+                                    {{ $product->name }}
+                                </p>
                                 <p
                                     class="text-text-muted-light dark:text-text-muted-dark text-xs font-normal leading-normal">
                                     Stok: {{ $product->stock }}</p>
@@ -253,8 +261,9 @@
                 class="flex items-center justify-between px-6 py-5 border-b border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
                 <div>
                     <h3 class="text-slate-900 dark:text-white text-xl font-bold">Keranjang</h3>
-                    <p class="text-text-muted-light dark:text-text-muted-dark text-sm">#{{ rand(1000, 9999) }} • Walk-in
-                        Customer</p>
+                    <p class="text-text-muted-light dark:text-text-muted-dark text-sm">#{{ rand(1000, 9999) }}
+                        {{ $customer->name ?? 'Walk-in Customer' }}
+                    </p>
                 </div>
                 <button class="lg:hidden text-text-muted-light dark:text-text-muted-dark"
                     @click="mobileCartOpen = false">
@@ -265,7 +274,7 @@
             <div class="flex-1 overflow-y-auto p-4 space-y-3">
                 @forelse($cart as $index => $item)
                     <!-- Cart Item -->
-                    <div
+                    <div wire:key="cart-item-{{ $item['product_id'] }}"
                         class="flex items-center gap-4 bg-slate-100 dark:bg-[#1e1515] p-3 rounded-lg border border-transparent hover:border-border-light dark:hover:border-border-dark transition-colors group">
                         <div
                             class="bg-slate-200 dark:bg-[#382929] rounded-md shrink-0 size-14 overflow-hidden relative flex items-center justify-center">
@@ -280,19 +289,23 @@
                         <div class="flex flex-col flex-1 min-w-0">
                             <div class="flex justify-between items-start">
                                 <p class="text-slate-900 dark:text-white text-sm font-medium leading-tight line-clamp-1">
-                                    {{ $item['name'] }}</p>
+                                    {{ $item['name'] }}
+                                </p>
                                 <div class="text-right">
                                     @if($item['price'] < $item['original_price'])
                                         <p class="text-xs text-text-muted-light dark:text-text-muted-dark line-through">Rp
-                                            {{ number_format($item['original_price'] * $item['quantity'], 0, ',', '.') }}</p>
+                                            {{ number_format($item['original_price'] * $item['quantity'], 0, ',', '.') }}
+                                        </p>
                                     @endif
                                     <p class="text-slate-900 dark:text-white text-sm font-bold">Rp
-                                        {{ number_format($item['total'], 0, ',', '.') }}</p>
+                                        {{ number_format($item['total'], 0, ',', '.') }}
+                                    </p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 mt-0.5">
                                 <p class="text-text-muted-light dark:text-text-muted-dark text-xs font-normal">Rp
-                                    {{ number_format($item['price'], 0, ',', '.') }} / unit</p>
+                                    {{ number_format($item['price'], 0, ',', '.') }} / unit
+                                </p>
                                 @if(isset($item['discount_info']) && $item['discount_info'])
                                     <span
                                         class="text-[10px] font-bold px-1.5 py-0.5 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded">{{ $item['discount_info'] }}</span>
@@ -449,7 +462,7 @@
                     <div class="flex gap-3">
                         @foreach(['cash' => 'Tunai', 'qris' => 'QRIS', 'transfer' => 'Transfer'] as $key => $label)
                                     <button class="flex-1 p-3 rounded-lg border-2 transition-all font-bold
-                                               {{ $paymentMethod === $key
+                                                                                                               {{ $paymentMethod === $key
                             ? 'border-primary bg-primary/10 text-slate-900'
                             : 'border-gray-300 bg-white text-gray-700 hover:border-slate-400' }}"
                                         wire:click="setPaymentMethod('{{ $key }}')">
@@ -686,6 +699,9 @@
     </div>
 
     <script>
+        // Inject Printer Type
+        window.posPrinterType = @json($printerType);
+
         // Global Printer Instance
         let printerInstance = null;
         window.btPrinter = null;
@@ -698,14 +714,26 @@
                 return;
             }
 
+            // Determine printer type from Blade variable (passed as global or checked here)
+            // Since we can't easily access PHP $printerType directly in JS function without passing it, 
+            // we will rely on checking the button or assuming the user knows what they are connecting.
+            // Better: Pass printer type to this function? Or read from a global var.
+            // Let's assume we initialize the type correctly based on the settings.
+
+            // For now, let's try to detect based on global setting injected or just try default.
+            // But wait, PrintHub init needs type.
+            // Let's inject the type from Blade into a global JS variable.
+
+            const pType = window.posPrinterType || 'bluetooth';
+
             if (!printerInstance) {
                 try {
                     // PrintHub Init
                     printerInstance = new PrintHub.init({
                         paperSize: "58",
-                        printerType: "bluetooth"
+                        printerType: pType === 'usb_web' ? 'usb' : 'bluetooth'
                     });
-                    console.log("PrintHub instance created");
+                    console.log("PrintHub instance created for " + pType);
                 } catch (e) {
                     console.error("Error creating printer instance:", e);
                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Error init printer: ' + e.message } }));
@@ -716,7 +744,7 @@
             printerInstance.connectToPrint({
                 onReady: (print) => {
                     window.btPrinter = print;
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Printer Bluetooth Terhubung!' } }));
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Printer Terhubung (' + (pType === 'usb_web' ? 'USB' : 'Bluetooth') + ')!' } }));
                     console.log("Printer Connected Successfully", print);
                 },
                 onFailed: (message) => {
@@ -726,7 +754,94 @@
             });
         }
 
+        async function autoConnectPrinter() {
+             const pType = window.posPrinterType || 'bluetooth';
+             if (typeof PrintHub === 'undefined') return;
+
+             // USB Auto-Connect
+             if (pType === 'usb_web' && navigator.usb) {
+                 try {
+                     const devices = await navigator.usb.getDevices();
+                     if (devices.length > 0) {
+                         console.log("Mencoba koneksi otomatis ke perangkat USB:", devices[0]);
+                         
+                         const originalRequest = navigator.usb.requestDevice;
+                         navigator.usb.requestDevice = () => Promise.resolve(devices[0]);
+                         
+                         try {
+                            if (!printerInstance) {
+                                 printerInstance = new PrintHub.init({
+                                    paperSize: "58",
+                                    printerType: 'usb'
+                                });
+                            }
+                            
+                            printerInstance.connectToPrint({
+                                onReady: (print) => {
+                                    window.btPrinter = print;
+                                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Printer USB Terhubung Otomatis!' } }));
+                                    navigator.usb.requestDevice = originalRequest;
+                                },
+                                onFailed: (message) => {
+                                    console.warn("Auto-connect logic failed inside PrintHub:", message);
+                                    navigator.usb.requestDevice = originalRequest;
+                                }
+                            });
+                         } catch (err) {
+                             console.error("Error during auto-connect patch:", err);
+                             navigator.usb.requestDevice = originalRequest;
+                         }
+                     }
+                 } catch (e) {
+                     console.error("Auto-disconnect check USB failed:", e);
+                 }
+             }
+
+             // Bluetooth Auto-Connect
+             if (pType === 'bluetooth' && navigator.bluetooth && navigator.bluetooth.getDevices) {
+                try {
+                     const devices = await navigator.bluetooth.getDevices();
+                     if (devices.length > 0) {
+                         console.log("Mencoba koneksi otomatis ke perangkat Bluetooth:", devices[0]);
+                         
+                         // Monkey-patch requestDevice for Bluetooth
+                         const originalRequest = navigator.bluetooth.requestDevice;
+                         navigator.bluetooth.requestDevice = () => Promise.resolve(devices[0]);
+                         
+                         try {
+                            if (!printerInstance) {
+                                 printerInstance = new PrintHub.init({
+                                    paperSize: "58",
+                                    printerType: 'bluetooth'
+                                });
+                            }
+                            
+                            printerInstance.connectToPrint({
+                                onReady: (print) => {
+                                    window.btPrinter = print;
+                                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Printer Bluetooth Terhubung Otomatis!' } }));
+                                    navigator.bluetooth.requestDevice = originalRequest;
+                                },
+                                onFailed: (message) => {
+                                    console.warn("Auto-connect logic failed inside PrintHub (BT):", message);
+                                    navigator.bluetooth.requestDevice = originalRequest;
+                                }
+                            });
+                         } catch (err) {
+                             console.error("Error during auto-connect patch (BT):", err);
+                             navigator.bluetooth.requestDevice = originalRequest;
+                         }
+                     }
+                 } catch (e) {
+                     console.error("Auto-disconnect check Bluetooth failed:", e);
+                 }
+             }
+        }
+
         document.addEventListener('livewire:init', () => {
+            // Attempt Auto-Connect
+            setTimeout(autoConnectPrinter, 1000); // Small delay to ensure lib loaded
+
             // Livewire.on('printReceipt', (data) => {
             //     let iframe = document.getElementById('receipt-frame');
             //     if (!iframe) {
@@ -756,9 +871,9 @@
                 try {
                     // Header
                     await print.writeText(receipt.storeName, { align: "center", bold: true, size: "double" });
-                    if(receipt.storeAddress) await print.writeText(receipt.storeAddress, { align: "center" });
-                    if(receipt.storePhone) await print.writeText(receipt.storePhone, { align: "center" });
-                    
+                    if (receipt.storeAddress) await print.writeText(receipt.storeAddress, { align: "center" });
+                    if (receipt.storePhone) await print.writeText(receipt.storePhone, { align: "center" });
+
                     await print.writeLineBreak();
                     await print.writeText("No: " + receipt.invoice, { align: "left" });
                     await print.writeText("Tgl: " + receipt.date, { align: "left" });
@@ -784,7 +899,7 @@
                     if (receipt.tax > 0) {
                         await print.writeTextWith2Column("Pajak", new Intl.NumberFormat('id-ID').format(receipt.tax));
                     }
-                    
+
                     // Total Large
                     await print.writeLineBreak();
                     await print.writeText("TOTAL", { align: "center", bold: true });
@@ -800,9 +915,9 @@
                     await print.writeLineBreak(3); // Feed
 
                 } catch (e) {
-                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Gagal Print: ' + e.message } }));
-                     // Reset printer if connection lost?
-                     // window.btPrinter = null; 
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Gagal Print: ' + e.message } }));
+                    // Reset printer if connection lost?
+                    // window.btPrinter = null; 
                 }
             });
 
@@ -811,8 +926,8 @@
                     .then(response => response.json())
                     .then(result => {
                         if (result.success) {
-                            window.dispatchEvent(new CustomEvent('notify', { 
-                                detail: { type: 'success', message: result.message } 
+                            window.dispatchEvent(new CustomEvent('notify', {
+                                detail: { type: 'success', message: result.message }
                             }));
                         } else {
                             throw new Error(result.message);
@@ -822,7 +937,7 @@
                         console.error('Print Error:', error);
                         // Fallback to browser print logic (calling the existing printReceipt handler essentially)
                         // Since we can't easily emit back to self, we just replicate the logic or dispatch event to window
-                        
+
                         // Dispatch internal event or just run logic
                         let iframe = document.getElementById('receipt-frame');
                         if (!iframe) {
@@ -836,8 +951,8 @@
                         }
                         iframe.src = '/pos/receipt/' + data.orderId;
 
-                        window.dispatchEvent(new CustomEvent('notify', { 
-                            detail: { type: 'warning', message: 'Direct Print Gagal' } 
+                        window.dispatchEvent(new CustomEvent('notify', {
+                            detail: { type: 'warning', message: 'Direct Print Gagal' }
                         }));
                     });
             });

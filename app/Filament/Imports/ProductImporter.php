@@ -55,6 +55,14 @@ class ProductImporter extends Importer
                 ->label('Stok Minimum')
                 ->numeric()
                 ->rules(['integer', 'min:0']),
+            ImportColumn::make('unlimited_stock')
+                ->label('Stok Tak Terbatas')
+                ->boolean()
+                ->rules(['boolean']),
+            ImportColumn::make('track_cost')
+                ->label('Lacak Harga Modal')
+                ->boolean()
+                ->rules(['boolean']),
             ImportColumn::make('is_active')
                 ->label('Aktif')
                 ->boolean()
@@ -64,10 +72,23 @@ class ProductImporter extends Importer
 
     public function resolveRecord(): ?Product
     {
-        // Update existing product by SKU, or create new one
-        return Product::firstOrNew([
-            'sku' => $this->data['sku'],
-        ]);
+        // First try to find by SKU
+        $product = Product::where('sku', $this->data['sku'])->first();
+
+        if ($product) {
+            return $product;
+        }
+
+        // Also check by barcode if provided to avoid unique constraint violation
+        if (!empty($this->data['barcode'])) {
+            $product = Product::where('barcode', $this->data['barcode'])->first();
+            if ($product) {
+                return $product;
+            }
+        }
+
+        // Create new product
+        return new Product(['sku' => $this->data['sku']]);
     }
 
     public static function getCompletedNotificationBody(Import $import): string

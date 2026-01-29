@@ -32,6 +32,10 @@ class ProductExporter extends Exporter
                 ->label('Stok'),
             ExportColumn::make('min_stock')
                 ->label('Stok Minimum'),
+            ExportColumn::make('unlimited_stock')
+                ->label('Stok Tak Terbatas'),
+            ExportColumn::make('track_cost')
+                ->label('Lacak Harga Modal'),
             ExportColumn::make('is_active')
                 ->label('Aktif'),
         ];

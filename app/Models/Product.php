@@ -21,6 +21,8 @@ class Product extends Model
         'selling_price',
         'stock',
         'min_stock',
+        'unlimited_stock',
+        'track_cost',
         'image',
         'is_active',
     ];
@@ -30,6 +32,8 @@ class Product extends Model
         'selling_price' => 'decimal:2',
         'stock' => 'integer',
         'min_stock' => 'integer',
+        'unlimited_stock' => 'boolean',
+        'track_cost' => 'boolean',
         'is_active' => 'boolean',
     ];
 
@@ -54,6 +58,9 @@ class Product extends Model
      */
     public function isLowStock(): bool
     {
+        if ($this->unlimited_stock) {
+            return false;
+        }
         return $this->stock <= $this->min_stock;
     }
 
@@ -62,6 +69,9 @@ class Product extends Model
      */
     public function isOutOfStock(): bool
     {
+        if ($this->unlimited_stock) {
+            return false;
+        }
         return $this->stock <= 0;
     }
 
@@ -70,6 +80,9 @@ class Product extends Model
      */
     public function getProfitAttribute(): float
     {
+        if (!$this->track_cost) {
+            return 0;
+        }
         return $this->selling_price - $this->purchase_price;
     }
 
@@ -89,6 +102,11 @@ class Product extends Model
      */
     public function reduceStock(int $quantity): bool
     {
+        // Skip stock reduction for unlimited stock products
+        if ($this->unlimited_stock) {
+            return true;
+        }
+
         if ($this->stock >= $quantity) {
             $this->decrement('stock', $quantity);
             return true;
@@ -113,11 +131,20 @@ class Product extends Model
     }
 
     /**
-     * Scope to get products with low stock
+     * Scope to get products with low stock (excludes unlimited stock)
      */
     public function scopeLowStock($query)
     {
-        return $query->whereColumn('stock', '<=', 'min_stock');
+        return $query->where('unlimited_stock', false)
+            ->whereColumn('stock', '<=', 'min_stock');
+    }
+
+    /**
+     * Scope to get products with limited stock tracking
+     */
+    public function scopeLimitedStock($query)
+    {
+        return $query->where('unlimited_stock', false);
     }
 
     /**
@@ -127,8 +154,8 @@ class Product extends Model
     {
         return $query->where(function ($q) use ($search) {
             $q->where('name', 'like', "%{$search}%")
-              ->orWhere('sku', 'like', "%{$search}%")
-              ->orWhere('barcode', 'like', "%{$search}%");
+                ->orWhere('sku', 'like', "%{$search}%")
+                ->orWhere('barcode', 'like', "%{$search}%");
         });
     }
 }

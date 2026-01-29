@@ -12,10 +12,13 @@ use App\Models\StoreSetting;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Computed;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Customer;
 use App\Models\CustomerProductDiscount;
+use App\Services\OrderService;
 
 #[Layout('layouts.pos')]
 class PosTerminal extends Component
@@ -74,6 +77,14 @@ class PosTerminal extends Component
         $this->printerType = StoreSetting::get(StoreSetting::PRINTER_TYPE, 'usb');
     }
 
+    #[Computed]
+    public function categories()
+    {
+        return Cache::remember('pos_categories', 600, function () {
+            return Category::active()->withCount('products')->get();
+        });
+    }
+
     public function openProfileModal()
     {
         $user = Auth::user();
@@ -108,8 +119,6 @@ class PosTerminal extends Component
 
     public function render()
     {
-        $categories = Category::active()->withCount('products')->get();
-
         $products = Product::query()
             ->active()
             ->when($this->search, fn($q) => $q->search($this->search))
@@ -119,7 +128,7 @@ class PosTerminal extends Component
             ->get();
 
         return view('livewire.pos-terminal', [
-            'categories' => $categories,
+            'categories' => $this->categories,
             'products' => $products,
             'storeName' => StoreSetting::get(StoreSetting::STORE_NAME, 'POS Store'),
             'customers' => $this->customerSearch ? Customer::where('name', 'like', '%' . $this->customerSearch . '%')->limit(5)->get() : [],
@@ -137,6 +146,27 @@ class PosTerminal extends Component
         $this->perPage = 30; // Reset pagination
     }
 
+    public function handleBarcodeScan($barcode = null)
+    {
+        // Use passed barcode or fallback to search property
+        $code = $barcode ?? $this->search;
+
+        if (empty($code)) {
+            return;
+        }
+
+        $product = Product::query()
+            ->active()
+            ->where('barcode', $code)
+            ->first();
+
+        if ($product) {
+            $this->addToCart($product->id);
+            $this->search = ''; // Clear search after successful add
+            $this->dispatch('clear-search');
+        }
+    }
+
     public function loadMore()
     {
         $this->perPage += 30;
@@ -151,7 +181,7 @@ class PosTerminal extends Component
             return;
         }
 
-        if ($product->stock <= 0) {
+        if (!$product->unlimited_stock && $product->stock <= 0) {
             $this->dispatch('notify', type: 'error', message: 'Stok produk habis');
             return;
         }
@@ -160,8 +190,8 @@ class PosTerminal extends Component
         $cartKey = array_search($productId, array_column($this->cart, 'product_id'));
 
         if ($cartKey !== false) {
-            // Check stock before increasing
-            if ($this->cart[$cartKey]['quantity'] >= $product->stock) {
+            // Check stock before increasing (skip for unlimited stock)
+            if (!$product->unlimited_stock && $this->cart[$cartKey]['quantity'] >= $product->stock) {
                 $this->dispatch('notify', type: 'warning', message: 'Stok tidak mencukupi');
                 return;
             }
@@ -177,6 +207,7 @@ class PosTerminal extends Component
                 'total' => (float) $product->selling_price,
                 'image' => $product->image,
                 'stock' => $product->stock,
+                'unlimited_stock' => $product->unlimited_stock,
                 'discount_info' => null, // 'Global 10%' or 'Special $5'
                 'manual_discount' => false, // key for manual override
             ];
@@ -191,7 +222,7 @@ class PosTerminal extends Component
     public function updatedSelectedCustomerId()
     {
         if ($this->selectedCustomerId) {
-            $this->customer = Customer::find($this->selectedCustomerId);
+            $this->customer = Customer::with('specialDiscounts')->find($this->selectedCustomerId);
             $this->customerSearch = $this->customer->name;
         } else {
             $this->customer = null;
@@ -278,7 +309,8 @@ class PosTerminal extends Component
         if (isset($this->cart[$index])) {
             $product = Product::find($this->cart[$index]['product_id']);
 
-            if ($product && $this->cart[$index]['quantity'] < $product->stock) {
+            // Allow increment if unlimited stock or quantity is below stock
+            if ($product && ($product->unlimited_stock || $this->cart[$index]['quantity'] < $product->stock)) {
                 $this->cart[$index]['quantity']++;
                 $this->cart[$index]['total'] = $this->cart[$index]['quantity'] * $this->cart[$index]['price'];
                 $this->applyCustomerDiscounts();
@@ -476,7 +508,7 @@ class PosTerminal extends Component
         $this->calculateTotals();
     }
 
-    public function processPayment()
+    public function processPayment(OrderService $orderService)
     {
         if (empty($this->cart)) {
             $this->dispatch('notify', type: 'error', message: 'Keranjang kosong');
@@ -489,11 +521,7 @@ class PosTerminal extends Component
         }
 
         try {
-            DB::beginTransaction();
-
-            // Create order
-            $order = Order::create([
-                'user_id' => Auth::id(),
+            $orderData = [
                 'subtotal' => $this->subtotal,
                 'discount' => $this->discount,
                 'tax' => $this->tax > 0 ? ($this->subtotal - $this->discount) * ($this->tax / 100) : 0,
@@ -501,29 +529,10 @@ class PosTerminal extends Component
                 'payment_method' => $this->paymentMethod,
                 'amount_paid' => (float) $this->amountPaid,
                 'change' => $this->change,
-                'payment_status' => 'paid',
                 'customer_id' => $this->selectedCustomerId,
-            ]);
+            ];
 
-            // Create order items and reduce stock
-            foreach ($this->cart as $item) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $item['product_id'],
-                    'product_name' => $item['name'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['price'], // Use discounted price
-                    'total_price' => $item['total'],
-                ]);
-
-                // Reduce stock
-                $product = Product::find($item['product_id']);
-                if ($product) {
-                    $product->reduceStock($item['quantity']);
-                }
-            }
-
-            DB::commit();
+            $order = $orderService->createOrder($orderData, $this->cart);
 
             // Clear cart
             $this->cart = [];
@@ -532,8 +541,8 @@ class PosTerminal extends Component
             $this->calculateTotals();
             $this->showCheckoutModal = false;
 
-            // Trigger print via Controller (Client-side fetch)
-            if ($this->printerType === 'bluetooth') {
+            // Trigger print
+            if ($this->printerType === 'bluetooth' || $this->printerType === 'usb_web') {
                 $this->dispatch('printBluetoothReceipt', data: $this->getReceiptData($order));
             } else {
                 $this->dispatch('triggerDirectPrint', orderId: $order->id);
@@ -542,8 +551,7 @@ class PosTerminal extends Component
             $this->dispatch('notify', type: 'success', message: 'Transaksi berhasil! Invoice: ' . $order->invoice_number);
 
         } catch (\Exception $e) {
-            DB::rollBack();
-            $this->dispatch('notify', type: 'error', message: 'Terjadi kesalahan: ' . $e->getMessage());
+            $this->dispatch('notify', type: 'error', message: $e->getMessage());
         }
     }
     protected function getReceiptData(Order $order)
