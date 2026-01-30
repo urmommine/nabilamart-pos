@@ -9,6 +9,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Table;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
@@ -172,10 +173,11 @@ class OrderResource extends Resource
                         $action->getLivewire()->dispatch('print-invoice', data: $receiptData);
                     })
                     ->color('success'),
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    // No bulk delete for orders
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

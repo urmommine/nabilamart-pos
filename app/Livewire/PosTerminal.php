@@ -164,6 +164,10 @@ class PosTerminal extends Component
             $this->addToCart($product->id);
             $this->search = ''; // Clear search after successful add
             $this->dispatch('clear-search');
+        } else {
+            $this->dispatch('notify', type: 'error', message: 'Produk tidak ditemukan');
+            $this->search = ''; // Clear search even if not found
+            $this->dispatch('clear-search');
         }
     }
 

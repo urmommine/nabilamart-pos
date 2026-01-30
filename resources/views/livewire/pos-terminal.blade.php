@@ -158,8 +158,7 @@
                                 class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 focus:border-primary border border-l-0 border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark h-full placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark px-4 text-base font-medium leading-normal transition-all"
                                 placeholder="Cari produk atau scan barcode (F2)" wire:model.live.debounce.300ms="search"
                                 wire:keydown.enter.prevent="handleBarcodeScan($event.target.value)"
-                                x-on:clear-search.window="$el.value = ''"
-                                id="search-input" />
+                                x-on:clear-search.window="$el.value = ''" id="search-input" />
                         </div>
                     </label>
                 </div>
@@ -311,7 +310,7 @@
                                         class="text-[10px] font-bold px-1.5 py-0.5 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded">{{ $item['discount_info'] }}</span>
                                 @endif
                                 <button wire:click="openItemDiscountModal({{ $index }})"
-                                    class="text-xs text-primary hover:underline ml-1">Edit</button>
+                                    class="text-xs text-primary hover:underline ml-1">Edit Diskon</button>
                             </div>
                             <div class="flex items-center justify-between mt-2">
                                 <div class="flex items-center gap-2">
@@ -462,7 +461,7 @@
                     <div class="flex gap-3">
                         @foreach(['cash' => 'Tunai', 'qris' => 'QRIS', 'transfer' => 'Transfer'] as $key => $label)
                                     <button class="flex-1 p-3 rounded-lg border-2 transition-all font-bold
-                                                                                                               {{ $paymentMethod === $key
+                                                                                                                                                                                                                                               {{ $paymentMethod === $key
                             ? 'border-primary bg-primary/10 text-slate-900'
                             : 'border-gray-300 bg-white text-gray-700 hover:border-slate-400' }}"
                                         wire:click="setPaymentMethod('{{ $key }}')">
@@ -755,27 +754,27 @@
         }
 
         async function autoConnectPrinter() {
-             const pType = window.posPrinterType || 'bluetooth';
-             if (typeof PrintHub === 'undefined') return;
+            const pType = window.posPrinterType || 'bluetooth';
+            if (typeof PrintHub === 'undefined') return;
 
-             // USB Auto-Connect
-             if (pType === 'usb_web' && navigator.usb) {
-                 try {
-                     const devices = await navigator.usb.getDevices();
-                     if (devices.length > 0) {
-                         console.log("Mencoba koneksi otomatis ke perangkat USB:", devices[0]);
-                         
-                         const originalRequest = navigator.usb.requestDevice;
-                         navigator.usb.requestDevice = () => Promise.resolve(devices[0]);
-                         
-                         try {
+            // USB Auto-Connect
+            if (pType === 'usb_web' && navigator.usb) {
+                try {
+                    const devices = await navigator.usb.getDevices();
+                    if (devices.length > 0) {
+                        console.log("Mencoba koneksi otomatis ke perangkat USB:", devices[0]);
+
+                        const originalRequest = navigator.usb.requestDevice;
+                        navigator.usb.requestDevice = () => Promise.resolve(devices[0]);
+
+                        try {
                             if (!printerInstance) {
-                                 printerInstance = new PrintHub.init({
+                                printerInstance = new PrintHub.init({
                                     paperSize: "58",
                                     printerType: 'usb'
                                 });
                             }
-                            
+
                             printerInstance.connectToPrint({
                                 onReady: (print) => {
                                     window.btPrinter = print;
@@ -787,35 +786,35 @@
                                     navigator.usb.requestDevice = originalRequest;
                                 }
                             });
-                         } catch (err) {
-                             console.error("Error during auto-connect patch:", err);
-                             navigator.usb.requestDevice = originalRequest;
-                         }
-                     }
-                 } catch (e) {
-                     console.error("Auto-disconnect check USB failed:", e);
-                 }
-             }
+                        } catch (err) {
+                            console.error("Error during auto-connect patch:", err);
+                            navigator.usb.requestDevice = originalRequest;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Auto-disconnect check USB failed:", e);
+                }
+            }
 
-             // Bluetooth Auto-Connect
-             if (pType === 'bluetooth' && navigator.bluetooth && navigator.bluetooth.getDevices) {
+            // Bluetooth Auto-Connect
+            if (pType === 'bluetooth' && navigator.bluetooth && navigator.bluetooth.getDevices) {
                 try {
-                     const devices = await navigator.bluetooth.getDevices();
-                     if (devices.length > 0) {
-                         console.log("Mencoba koneksi otomatis ke perangkat Bluetooth:", devices[0]);
-                         
-                         // Monkey-patch requestDevice for Bluetooth
-                         const originalRequest = navigator.bluetooth.requestDevice;
-                         navigator.bluetooth.requestDevice = () => Promise.resolve(devices[0]);
-                         
-                         try {
+                    const devices = await navigator.bluetooth.getDevices();
+                    if (devices.length > 0) {
+                        console.log("Mencoba koneksi otomatis ke perangkat Bluetooth:", devices[0]);
+
+                        // Monkey-patch requestDevice for Bluetooth
+                        const originalRequest = navigator.bluetooth.requestDevice;
+                        navigator.bluetooth.requestDevice = () => Promise.resolve(devices[0]);
+
+                        try {
                             if (!printerInstance) {
-                                 printerInstance = new PrintHub.init({
+                                printerInstance = new PrintHub.init({
                                     paperSize: "58",
                                     printerType: 'bluetooth'
                                 });
                             }
-                            
+
                             printerInstance.connectToPrint({
                                 onReady: (print) => {
                                     window.btPrinter = print;
@@ -827,15 +826,15 @@
                                     navigator.bluetooth.requestDevice = originalRequest;
                                 }
                             });
-                         } catch (err) {
-                             console.error("Error during auto-connect patch (BT):", err);
-                             navigator.bluetooth.requestDevice = originalRequest;
-                         }
-                     }
-                 } catch (e) {
-                     console.error("Auto-disconnect check Bluetooth failed:", e);
-                 }
-             }
+                        } catch (err) {
+                            console.error("Error during auto-connect patch (BT):", err);
+                            navigator.bluetooth.requestDevice = originalRequest;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Auto-disconnect check Bluetooth failed:", e);
+                }
+            }
         }
 
         document.addEventListener('livewire:init', () => {
@@ -877,8 +876,8 @@
                     await print.writeLineBreak();
                     await print.writeText("No: " + receipt.invoice, { align: "left" });
                     await print.writeText("Tgl: " + receipt.date, { align: "left" });
-                    await print.writeText("Kasir: " + receipt.cashier, { align: "left" });
-                    await print.writeText("Pelanggan: " + receipt.customer, { align: "left" });
+                    // await print.writeText("Kasir: " + receipt.cashier, { align: "left" });
+                    // await print.writeText("Pelanggan: " + receipt.customer, { align: "left" });
                     await print.writeDashLine();
 
                     // Items
@@ -912,7 +911,8 @@
                     // Footer
                     await print.writeDashLine();
                     await print.writeText(receipt.footer, { align: "center" });
-                    await print.writeLineBreak(3); // Feed
+                    await print.writeLineBreak({ count: 3 }); // Feed
+                    // await print.writeLineBreak();
 
                 } catch (e) {
                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Gagal Print: ' + e.message } }));

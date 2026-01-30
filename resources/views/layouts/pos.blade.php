@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html x-data="{ darkMode: localStorage.getItem('pos-theme') !== 'light' }"
+<html x-data="{ darkMode: localStorage.getItem('pos-theme') === 'dark' }"
     x-init="$watch('darkMode', val => localStorage.setItem('pos-theme', val ? 'dark' : 'light'))"
     :class="{ 'dark': darkMode }" lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
@@ -11,10 +11,10 @@
 
     <!-- Prevent flash of wrong theme -->
     <script>
-        if (localStorage.getItem('pos-theme') === 'light') {
-            document.documentElement.classList.remove('dark');
-        } else {
+        if (localStorage.getItem('pos-theme') === 'dark') {
             document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
         }
     </script>
 
