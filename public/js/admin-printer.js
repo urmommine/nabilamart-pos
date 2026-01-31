@@ -4,8 +4,9 @@ window.btPrinter = null;
 
 document.addEventListener('livewire:init', () => {
     // Listen for Connect Event
-    Livewire.on('connect-printer', () => {
-        connectPrinter();
+    Livewire.on('connect-printer', (data) => {
+        const type = data.type || data || 'bluetooth';
+        connectPrinter(type);
     });
 
     // Listen for Print Event
@@ -40,6 +41,11 @@ document.addEventListener('livewire:init', () => {
             if (receipt.items && receipt.items.length > 0) {
                 for (let item of receipt.items) {
                     await print.writeText(item.name, { align: "left" });
+
+                    if (item.discount_info) {
+                        await print.writeText("  (Disc: " + item.discount_info + ")", { align: "left" });
+                    }
+
                     // Format: 2x @10.000   20.000
                     let line2_left = item.qty + "x @" + new Intl.NumberFormat('id-ID').format(item.price);
                     let line2_right = new Intl.NumberFormat('id-ID').format(item.total);
@@ -87,8 +93,14 @@ document.addEventListener('livewire:init', () => {
     });
 });
 
-function connectPrinter() {
-    console.log("Connect button clicked");
+function connectPrinter(type = 'bluetooth') {
+    console.log("Connect button clicked, type:", type);
+
+    // Map backend type to PrintHub type
+    let phType = type;
+    if (type === 'usb_web' || type === 'usb') phType = 'usb';
+    if (type === 'bluetooth') phType = 'bluetooth';
+
     if (typeof PrintHub === 'undefined') {
         new FilamentNotification()
             .title('Library Error')
@@ -98,23 +110,22 @@ function connectPrinter() {
         return;
     }
 
-    if (!printerInstance) {
-        try {
-            // PrintHub Init
-            printerInstance = new PrintHub.init({
-                paperSize: "58",
-                printerType: "bluetooth"
-            });
-            console.log("PrintHub instance created");
-        } catch (e) {
-            console.error("Error creating printer instance:", e);
-            new FilamentNotification()
-                .title('Init Error')
-                .body(e.message)
-                .danger()
-                .send();
-            return;
-        }
+    // Always re-init if type changed or not exists
+    try {
+        // PrintHub Init
+        printerInstance = new PrintHub.init({
+            paperSize: "58",
+            printerType: phType
+        });
+        console.log("PrintHub instance " + phType + " created");
+    } catch (e) {
+        console.error("Error creating printer instance:", e);
+        new FilamentNotification()
+            .title('Init Error')
+            .body(e.message)
+            .danger()
+            .send();
+        return;
     }
 
     printerInstance.connectToPrint({
@@ -122,7 +133,7 @@ function connectPrinter() {
             window.btPrinter = print;
             new FilamentNotification()
                 .title('Printer Terhubung')
-                .body('Siap mencetak via Bluetooth.')
+                .body('Siap mencetak via ' + type + '.')
                 .success()
                 .send();
         },

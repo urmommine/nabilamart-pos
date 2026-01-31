@@ -16,7 +16,7 @@ class ListOrders extends ListRecords
             Action::make('connect_printer')
                 ->label('Hubungkan Printer')
                 ->icon('heroicon-o-printer')
-                ->action(fn() => $this->dispatch('connect-printer'))
+                ->action(fn() => $this->dispatch('connect-printer', type: \App\Models\StoreSetting::get(\App\Models\StoreSetting::PRINTER_TYPE)))
                 ->color('gray'),
         ];
     }

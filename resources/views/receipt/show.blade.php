@@ -191,6 +191,11 @@
             @foreach($order->items as $item)
                 <div class="item">
                     <div class="item-name">{{ $item->product_name }}</div>
+                    @if($item->discount_info)
+                        <div class="item-detail" style="font-size: 10px; font-style: italic;">
+                            <span>Diskon: {{ $item->discount_info }}</span>
+                        </div>
+                    @endif
                     <div class="item-detail">
                         <span>{{ $item->quantity }} x Rp {{ number_format($item->unit_price, 0, ',', '.') }}</span>
                         <span>Rp {{ number_format($item->total_price, 0, ',', '.') }}</span>

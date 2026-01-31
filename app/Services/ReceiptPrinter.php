@@ -29,19 +29,19 @@ class ReceiptPrinter
                     throw new \Exception('IP Printer tidak dikonfigurasi');
                 }
                 return new NetworkPrintConnector($printerIp, 9100);
-            
+
             case 'usb':
             default:
                 if (empty($printerName)) {
                     // Try to use default printer on Windows
                     $printerName = 'POS-58';
                 }
-                
+
                 // Windows printer
                 if (PHP_OS_FAMILY === 'Windows') {
                     return new WindowsPrintConnector($printerName);
                 }
-                
+
                 // Linux/Mac - use file connector
                 return new FilePrintConnector('/dev/usb/lp0');
         }
@@ -85,14 +85,14 @@ class ReceiptPrinter
         $this->printer->text($storeName . "\n");
         $this->printer->setTextSize(1, 1);
         $this->printer->setEmphasis(false);
-        
+
         if ($storeAddress) {
             $this->printer->text($storeAddress . "\n");
         }
         if ($storePhone) {
             $this->printer->text("Telp: " . $storePhone . "\n");
         }
-        
+
         $this->printer->text(str_repeat("=", 32) . "\n");
     }
 
@@ -116,16 +116,21 @@ class ReceiptPrinter
         foreach ($order->items as $item) {
             // Product name
             $this->printer->text($this->truncate($item->product_name, 32) . "\n");
-            
+
             // Quantity x Price = Total
             $qty = $item->quantity;
             $price = number_format((float) $item->unit_price, 0, ',', '.');
             $total = number_format((float) $item->total_price, 0, ',', '.');
-            
+
+            if ($item->discount_info) {
+                $this->printer->setJustification(Printer::JUSTIFY_LEFT);
+                $this->printer->text("  (Disc: {$item->discount_info})\n");
+            }
+
             $line = "  {$qty} x {$price}";
             $this->printer->text($this->formatLine($line, $total, 32) . "\n");
         }
-        
+
         $this->printer->text(str_repeat("-", 32) . "\n");
     }
 
@@ -176,7 +181,7 @@ class ReceiptPrinter
      */
     protected function printPayment(Order $order): void
     {
-        $paymentMethod = match($order->payment_method) {
+        $paymentMethod = match ($order->payment_method) {
             'cash' => 'Tunai',
             'qris' => 'QRIS',
             'transfer' => 'Transfer',
@@ -206,7 +211,7 @@ class ReceiptPrinter
     protected function printFooter(): void
     {
         $footer = StoreSetting::get(StoreSetting::RECEIPT_FOOTER, 'Terima Kasih Sudah Berbelanja!');
-        
+
         $this->printer->setJustification(Printer::JUSTIFY_CENTER);
         $this->printer->text("\n" . $footer . "\n");
         $this->printer->text("\n\n");
@@ -220,7 +225,7 @@ class ReceiptPrinter
         $leftLen = mb_strlen($left);
         $rightLen = mb_strlen($right);
         $spaces = max(1, $width - $leftLen - $rightLen);
-        
+
         return $left . str_repeat(" ", $spaces) . $right;
     }
 

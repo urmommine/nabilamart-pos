@@ -130,6 +130,8 @@ class PosTerminal extends Component
         return view('livewire.pos-terminal', [
             'categories' => $this->categories,
             'products' => $products,
+            'productsJson' => Product::active()->get(['id', 'category_id', 'name', 'selling_price', 'image', 'stock', 'unlimited_stock', 'barcode']),
+            'categoriesJson' => $this->categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name]),
             'storeName' => StoreSetting::get(StoreSetting::STORE_NAME, 'POS Store'),
             'customers' => $this->customerSearch ? Customer::where('name', 'like', '%' . $this->customerSearch . '%')->limit(5)->get() : [],
         ]);
@@ -162,11 +164,15 @@ class PosTerminal extends Component
 
         if ($product) {
             $this->addToCart($product->id);
-            $this->search = ''; // Clear search after successful add
+            $this->search = '';
+            $this->selectedCategory = null;
+            $this->perPage = 30;
             $this->dispatch('clear-search');
         } else {
-            $this->dispatch('notify', type: 'error', message: 'Produk tidak ditemukan');
-            $this->search = ''; // Clear search even if not found
+            $this->dispatch('notify', type: 'error', message: 'Produk tidak ditemukan: ' . $code);
+            $this->search = '';
+            $this->selectedCategory = null;
+            $this->perPage = 30;
             $this->dispatch('clear-search');
         }
     }
@@ -526,13 +532,13 @@ class PosTerminal extends Component
 
         try {
             $orderData = [
-                'subtotal' => $this->subtotal,
-                'discount' => $this->discount,
-                'tax' => $this->tax > 0 ? ($this->subtotal - $this->discount) * ($this->tax / 100) : 0,
-                'total_amount' => $this->total,
+                'subtotal' => (float) $this->subtotal,
+                'discount' => (float) $this->discount,
+                'tax' => (float) ($this->tax > 0 ? ($this->subtotal - $this->discount) * ($this->tax / 100) : 0),
+                'total_amount' => (float) $this->total,
                 'payment_method' => $this->paymentMethod,
                 'amount_paid' => (float) $this->amountPaid,
-                'change' => $this->change,
+                'change' => (float) $this->change,
                 'customer_id' => $this->selectedCustomerId,
             ];
 
@@ -544,6 +550,9 @@ class PosTerminal extends Component
             $this->discountValue = '';
             $this->calculateTotals();
             $this->showCheckoutModal = false;
+
+            // Sync with Alpine
+            $this->dispatch('clear-alpine-cart');
 
             // Trigger print
             if ($this->printerType === 'bluetooth' || $this->printerType === 'usb_web') {
@@ -575,6 +584,7 @@ class PosTerminal extends Component
                     'qty' => $item->quantity,
                     'price' => $item->unit_price,
                     'total' => $item->total_price,
+                    'discount_info' => $item->discount_info,
                 ];
             }),
             'subtotal' => $order->subtotal,

@@ -1,4 +1,4 @@
-<div class="h-full flex flex-col">
+<div class="h-full flex flex-col" x-data="posTerminal">
     <!-- Top Navigation Bar -->
     <header
         class="flex shrink-0 items-center justify-between whitespace-nowrap border-b border-solid border-border-light dark:border-border-dark px-6 py-3 bg-background-light dark:bg-background-dark z-50">
@@ -156,87 +156,81 @@
                             </div>
                             <input
                                 class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 focus:border-primary border border-l-0 border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark h-full placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark px-4 text-base font-medium leading-normal transition-all"
-                                placeholder="Cari produk atau scan barcode (F2)" wire:model.live.debounce.300ms="search"
-                                wire:keydown.enter.prevent="handleBarcodeScan($event.target.value)"
-                                x-on:clear-search.window="$el.value = ''" id="search-input" />
+                                placeholder="Cari produk atau scan barcode (F2)" x-model="searchQuery"
+                                x-on:keydown.enter.prevent="let val = searchQuery; searchQuery = ''; addToCartByBarcode(val);"
+                                x-on:clear-search.window="searchQuery = ''"
+                                id="search-input" />
                         </div>
                     </label>
                 </div>
-                <!-- Tabs -->
                 <div
                     class="flex overflow-x-auto no-scrollbar gap-8 pb-0 border-t border-border-light dark:border-border-dark pt-2">
                     <button
-                        class="flex flex-col items-center justify-center border-b-[3px] {{ !$selectedCategory ? 'border-b-primary text-slate-900 dark:text-white' : 'border-b-transparent text-text-muted-light dark:text-text-muted-dark hover:text-slate-900 dark:hover:text-white hover:border-b-slate-300 dark:hover:border-b-white/20' }} pb-3 px-1 min-w-[60px] transition-all"
-                        wire:click="selectCategory(null)">
+                        class="flex flex-col items-center justify-center border-b-[3px] pb-3 px-1 min-w-[60px] transition-all"
+                        :class="!selectedCategory ? 'border-b-primary text-slate-900 dark:text-white' : 'border-b-transparent text-text-muted-light dark:text-text-muted-dark hover:text-slate-900 dark:hover:text-white hover:border-b-slate-300 dark:hover:border-b-white/20'"
+                        @click="selectCategory(null)">
                         <p class="text-sm font-bold leading-normal tracking-[0.015em]">Semua</p>
                     </button>
-                    @foreach($categories as $category)
-                        <button wire:key="cat-{{ $category->id }}"
-                            class="flex flex-col items-center justify-center border-b-[3px] {{ $selectedCategory === $category->id ? 'border-b-primary text-slate-900 dark:text-white' : 'border-b-transparent text-text-muted-light dark:text-text-muted-dark hover:text-slate-900 dark:hover:text-white hover:border-b-slate-300 dark:hover:border-b-white/20' }} pb-3 px-1 min-w-[60px] transition-all"
-                            wire:click="selectCategory({{ $category->id }})">
-                            <p class="text-sm font-bold leading-normal tracking-[0.015em]">{{ $category->name }}</p>
+                    <template x-for="category in categories" :key="category.id">
+                        <button
+                            class="flex flex-col items-center justify-center border-b-[3px] pb-3 px-1 min-w-[60px] transition-all"
+                            :class="selectedCategory === category.id ? 'border-b-primary text-slate-900 dark:text-white' : 'border-b-transparent text-text-muted-light dark:text-text-muted-dark hover:text-slate-900 dark:hover:text-white hover:border-b-slate-300 dark:hover:border-b-white/20'"
+                            @click="selectCategory(category.id)">
+                            <p class="text-sm font-bold leading-normal tracking-[0.015em]" x-text="category.name"></p>
                         </button>
-                    @endforeach
+                    </template>
                 </div>
             </div>
             <!-- Scrollable Grid Area -->
             <div class="flex-1 overflow-y-auto p-6 scroll-smooth">
                 <div class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
-                    @forelse($products as $product)
+                    <template x-for="product in filteredProducts" :key="product.id">
                         <!-- Product Card -->
-                        <div wire:key="prod-{{ $product->id }}"
-                            class="group cursor-pointer flex flex-col gap-3 p-3 rounded-xl bg-surface-light dark:bg-surface-dark border border-transparent hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-[#2a1f1f] transition-all duration-200 shadow-sm hover:shadow-lg hover:shadow-primary/5 {{ $product->stock <= 0 ? 'opacity-50 grayscale' : '' }}"
-                            wire:click="addToCart({{ $product->id }})">
-                            <div
-                                class="relative w-full aspect-square bg-slate-200 dark:bg-[#382929] rounded-lg overflow-hidden flex items-center justify-center">
-                                @if($product->image)
+                        <div class="group cursor-pointer flex flex-col gap-3 p-3 rounded-xl bg-surface-light dark:bg-surface-dark border border-transparent hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-[#2a1f1f] transition-all duration-200 shadow-sm hover:shadow-lg hover:shadow-primary/5"
+                            @click.stop="addToCart(product.id)">
+                            <div class="relative w-full aspect-square bg-slate-200 dark:bg-[#382929] rounded-lg overflow-hidden flex items-center justify-center">
+                                <template x-if="product.image">
                                     <div class="absolute inset-0 bg-center bg-cover bg-no-repeat"
-                                        style='background-image: url("{{ Storage::url($product->image) }}");'></div>
-                                @else
+                                        :style="'background-image: url(' + getImageUrl(product.image) + ');'"></div>
+                                </template>
+                                <template x-if="!product.image">
                                     <div class="absolute inset-0 bg-center bg-cover bg-no-repeat"
-                                        style='background-image: url("{{ asset('images/placeholder.png') }}");'></div>
-                                @endif
-                                <div
-                                    class="absolute top-2 right-2 bg-primary text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
-                                    Rp {{ number_format($product->selling_price, 0, ',', '.') }}
+                                        :style="'background-image: url({{ asset('images/placeholder.png') }});'"></div>
+                                </template>
+                                <div class="absolute top-2 right-2 bg-primary text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
+                                    Rp <span x-text="formatNumber(product.selling_price)"></span>
                                 </div>
-                                @if($product->stock <= 0)
+                                <template x-if="!product.unlimited_stock && product.stock <= 0">
                                     <div class="absolute inset-0 bg-black/60 flex items-center justify-center">
                                         <span class="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">HABIS</span>
                                     </div>
-                                @endif
+                                </template>
                             </div>
                             <div>
-                                <p
-                                    class="text-slate-900 dark:text-white text-base font-bold leading-tight mb-1 group-hover:text-primary transition-colors line-clamp-2">
-                                    {{ $product->name }}
+                                <p class="text-slate-900 dark:text-white text-base font-bold leading-tight mb-1 group-hover:text-primary transition-colors line-clamp-2" x-text="product.name"></p>
+                                <p class="text-text-muted-light dark:text-text-muted-dark text-xs font-normal leading-normal">
+                                    Stok: <span x-text="product.unlimited_stock ? '∞' : product.stock"></span>
                                 </p>
-                                <p
-                                    class="text-text-muted-light dark:text-text-muted-dark text-xs font-normal leading-normal">
-                                    Stok: {{ $product->stock }}</p>
                             </div>
                         </div>
-                    @empty
-                        <div
-                            class="col-span-full flex flex-col items-center justify-center text-text-muted-light dark:text-text-muted-dark py-10">
+                    </template>
+
+                    <template x-if="filteredProducts.length === 0">
+                        <div class="col-span-full flex flex-col items-center justify-center text-text-muted-light dark:text-text-muted-dark py-10">
                             <span class="material-symbols-outlined text-6xl mb-4 opacity-50">search_off</span>
                             <p>Tidak ada produk ditemukan</p>
                         </div>
-                    @endforelse
+                    </template>
 
-                    @if($products->count() >= $perPage)
+                    <template x-if="filteredProducts.length >= perPage">
                         <div class="col-span-full pt-4 flex justify-center">
-                            <button wire:click="loadMore"
+                            <button @click="loadMore"
                                 class="bg-slate-200 dark:bg-[#382929] hover:bg-slate-300 dark:hover:bg-[#4a3636] border border-slate-300 dark:border-[#533c3d] text-slate-700 dark:text-white font-bold py-3 px-8 rounded-xl flex items-center gap-2 transition-all shadow-sm">
-                                <span wire:loading.remove wire:target="loadMore"
-                                    class="flex items-center gap-2"><x-heroicon-o-archive-box-arrow-down class="w-5 h-5" />
-                                    Muat Lebih Banyak</span>
-                                <span wire:loading wire:target="loadMore"
-                                    class="animate-spin material-symbols-outlined text-sm">progress_activity</span>
-                                <span wire:loading wire:target="loadMore">Memuat...</span>
+                                <x-heroicon-o-archive-box-arrow-down class="w-5 h-5" />
+                                Muat Lebih Banyak
                             </button>
                         </div>
-                    @endif
+                    </template>
                 </div>
             </div>
 
@@ -271,77 +265,66 @@
             </div>
             <!-- Cart Items List (Scrollable) -->
             <div class="flex-1 overflow-y-auto p-4 space-y-3">
-                @forelse($cart as $index => $item)
+                <template x-for="(item, index) in cart" :key="item.product_id">
                     <!-- Cart Item -->
-                    <div wire:key="cart-item-{{ $item['product_id'] }}"
-                        class="flex items-center gap-4 bg-slate-100 dark:bg-[#1e1515] p-3 rounded-lg border border-transparent hover:border-border-light dark:hover:border-border-dark transition-colors group">
-                        <div
-                            class="bg-slate-200 dark:bg-[#382929] rounded-md shrink-0 size-14 overflow-hidden relative flex items-center justify-center">
-                            @if($item['image'])
+                    <div class="flex items-center gap-4 bg-slate-100 dark:bg-[#1e1515] p-3 rounded-lg border border-transparent hover:border-border-light dark:hover:border-border-dark transition-colors group">
+                        <div class="bg-slate-200 dark:bg-[#382929] rounded-md shrink-0 size-14 overflow-hidden relative flex items-center justify-center">
+                            <template x-if="item.image">
                                 <div class="absolute inset-0 bg-center bg-cover bg-no-repeat"
-                                    style='background-image: url("{{ Storage::url($item['image']) }}");'></div>
-                            @else
-                                <x-heroicon-o-archive-box
-                                    class="w-6 h-6 text-text-muted-light dark:text-text-muted-dark opacity-50" />
-                            @endif
+                                    :style="'background-image: url(' + getImageUrl(item.image) + ');'"></div>
+                            </template>
+                            <template x-if="!item.image">
+                                <span class="material-symbols-outlined text-text-muted-light dark:text-text-muted-dark opacity-50">inventory_2</span>
+                            </template>
                         </div>
                         <div class="flex flex-col flex-1 min-w-0">
                             <div class="flex justify-between items-start">
-                                <p class="text-slate-900 dark:text-white text-sm font-medium leading-tight line-clamp-1">
-                                    {{ $item['name'] }}
-                                </p>
+                                <p class="text-slate-900 dark:text-white text-sm font-medium leading-tight line-clamp-1" x-text="item.name"></p>
                                 <div class="text-right">
-                                    @if($item['price'] < $item['original_price'])
-                                        <p class="text-xs text-text-muted-light dark:text-text-muted-dark line-through">Rp
-                                            {{ number_format($item['original_price'] * $item['quantity'], 0, ',', '.') }}
-                                        </p>
-                                    @endif
-                                    <p class="text-slate-900 dark:text-white text-sm font-bold">Rp
-                                        {{ number_format($item['total'], 0, ',', '.') }}
-                                    </p>
+                                    <template x-if="item.price < item.original_price">
+                                        <p class="text-xs text-text-muted-light dark:text-text-muted-dark line-through" x-text="'Rp ' + formatNumber(item.original_price * item.quantity)"></p>
+                                    </template>
+                                    <p class="text-slate-900 dark:text-white text-sm font-bold" x-text="'Rp ' + formatNumber(item.total)"></p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 mt-0.5">
-                                <p class="text-text-muted-light dark:text-text-muted-dark text-xs font-normal">Rp
-                                    {{ number_format($item['price'], 0, ',', '.') }} / unit
-                                </p>
-                                @if(isset($item['discount_info']) && $item['discount_info'])
-                                    <span
-                                        class="text-[10px] font-bold px-1.5 py-0.5 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded">{{ $item['discount_info'] }}</span>
-                                @endif
-                                <button wire:click="openItemDiscountModal({{ $index }})"
+                                <p class="text-text-muted-light dark:text-text-muted-dark text-xs font-normal" x-text="'Rp ' + formatNumber(item.price) + ' / unit'"></p>
+                                <template x-if="item.discount_info">
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded" x-text="item.discount_info"></span>
+                                </template>
+                                <button @click="openItemDiscountModal(index)"
                                     class="text-xs text-primary hover:underline ml-1">Edit Diskon</button>
                             </div>
                             <div class="flex items-center justify-between mt-2">
                                 <div class="flex items-center gap-2">
                                     <button
                                         class="size-6 flex items-center justify-center rounded bg-slate-200 dark:bg-[#382929] text-slate-700 dark:text-white hover:bg-primary hover:text-white transition-colors"
-                                        wire:click="decrementQuantity({{ $index }})">
+                                        @click="decrementQuantity(index)">
                                         <span class="material-symbols-outlined text-sm">remove</span>
                                     </button>
-                                    <span
-                                        class="text-slate-900 dark:text-white text-sm font-medium w-6 text-center">{{ $item['quantity'] }}</span>
+                                    <span class="text-slate-900 dark:text-white text-sm font-medium w-6 text-center" x-text="item.quantity"></span>
                                     <button
                                         class="size-6 flex items-center justify-center rounded bg-slate-200 dark:bg-[#382929] text-slate-700 dark:text-white hover:bg-primary hover:text-white transition-colors"
-                                        wire:click="incrementQuantity({{ $index }})">
+                                        @click="incrementQuantity(index)">
                                         <span class="material-symbols-outlined text-sm">add</span>
                                     </button>
                                 </div>
                                 <button
                                     class="text-text-muted-light dark:text-text-muted-dark hover:text-red-500 transition-opacity"
-                                    wire:click="removeFromCart({{ $index }})">
+                                    @click="removeFromCart(index)">
                                     <span class="material-symbols-outlined text-lg">delete</span>
                                 </button>
                             </div>
                         </div>
                     </div>
-                @empty
-                    <div
-                        class="flex flex-col items-center justify-center h-full text-text-muted-light dark:text-text-muted-dark opacity-50">
+                </template>
+
+                <template x-if="cart.length === 0">
+                    <div class="flex flex-col items-center justify-center h-full text-text-muted-light dark:text-text-muted-dark opacity-50 py-10">
                         <span class="material-symbols-outlined text-6xl mb-2">shopping_basket</span>
                         <p>Keranjang Kosong</p>
                     </div>
-                @endforelse
+                </template>
             </div>
             <!-- Cart Footer / Totals -->
             <div
@@ -349,47 +332,44 @@
                 <div class="space-y-2">
                     <div class="flex justify-between text-text-muted-light dark:text-text-muted-dark text-sm">
                         <span>Subtotal</span>
-                        <span class="text-slate-900 dark:text-white font-medium">Rp
-                            {{ number_format($subtotal, 0, ',', '.') }}</span>
+                        <span class="text-slate-900 dark:text-white font-medium" x-text="'Rp ' + formatNumber(subtotal)"></span>
                     </div>
-                    @if($tax > 0)
+                    <template x-if="tax > 0">
                         <div class="flex justify-between text-text-muted-light dark:text-text-muted-dark text-sm">
-                            <span>Pajak ({{ $tax }}%)</span>
-                            <span class="text-slate-900 dark:text-white font-medium">Rp
-                                {{ number_format(($subtotal - $discount) * ($tax / 100), 0, ',', '.') }}</span>
+                            <span x-text="'Pajak (' + tax + '%)'"></span>
+                            <span class="text-slate-900 dark:text-white font-medium" x-text="'Rp ' + formatNumber((subtotal - discount) * (tax / 100))"></span>
                         </div>
-                    @endif
-                    @if($discount > 0)
+                    </template>
+                    <template x-if="discount > 0">
                         <div class="flex justify-between text-text-muted-light dark:text-text-muted-dark text-sm">
                             <span>Diskon</span>
-                            <span class="text-green-500 font-medium">-Rp {{ number_format($discount, 0, ',', '.') }}</span>
+                            <span class="text-green-500 font-medium" x-text="'-Rp ' + formatNumber(discount)"></span>
                         </div>
-                    @endif
+                    </template>
                 </div>
                 <div
                     class="flex justify-between items-end pt-2 border-t border-slate-200 dark:border-[#382929] border-dashed">
                     <span class="text-slate-900 dark:text-white font-medium text-lg">Total</span>
-                    <span class="text-slate-900 dark:text-white font-bold text-3xl">Rp
-                        {{ number_format($total, 0, ',', '.') }}</span>
+                    <span class="text-slate-900 dark:text-white font-bold text-3xl" x-text="'Rp ' + formatNumber(total)"></span>
                 </div>
-                @if(!empty($cart))
+                <template x-if="cart.length > 0">
                     <div class="grid grid-cols-[1fr_2fr] gap-3 pt-2">
                         <button
                             class="flex items-center justify-center rounded-xl bg-slate-200 dark:bg-[#382929] text-slate-700 dark:text-white hover:bg-slate-300 dark:hover:bg-[#4a3636] transition-colors py-4 text-base font-bold"
-                            wire:click="clearCart" title="Alt+Delete">
+                            @click="clearCart" title="Alt+Delete">
                             <span class="material-symbols-outlined mr-2">delete</span>
                             Clear (Alt+Del)
                         </button>
                         <button
                             class="flex items-center justify-center rounded-xl bg-primary text-white hover:bg-red-600 transition-colors py-4 text-lg font-bold shadow-[0_0_15px_rgba(234,42,51,0.4)] hover:shadow-[0_0_20px_rgba(234,42,51,0.6)]"
-                            wire:click="openCheckout">
+                            @click="openCheckout()">
                             Bayar
                             <span class="material-symbols-outlined ml-2">arrow_forward</span>
                         </button>
 
                         <button
                             class="col-span-1 flex items-center justify-center rounded-xl bg-slate-200 dark:bg-[#382929] text-slate-700 dark:text-white hover:bg-slate-300 dark:hover:bg-[#4a3636] transition-colors py-2 text-sm font-bold"
-                            wire:click="openDiscountModal">
+                            @click="showGlobalDiscountModal = true">
                             <x-heroicon-o-tag class="w-5 h-5 mr-1 text-yellow-500" /> Diskon (F4)
                         </button>
                         <button
@@ -404,7 +384,7 @@
                             @endif
                         </button>
                     </div>
-                @endif
+                </template>
             </div>
         </aside>
     </main>
@@ -441,180 +421,186 @@
         }
     </style>
 
-    <!-- Checkout Modal -->
-    @if($showCheckoutModal)
-        <div class="custom-modal-backdrop" wire:click.self="closeModal" x-data @keydown.window.escape="$wire.closeModal()"
-            @keydown.window.f1.prevent="$wire.setExactAmount()">
-            <div class="custom-modal" wire:click.stop>
-                <div class="p-5 border-b border-gray-200 bg-slate-50">
-                    <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                        <x-heroicon-o-credit-card class="w-6 h-6 text-blue-400" />
-                        Pembayaran
-                    </h3>
+    <!-- Checkout Modal (Alpine) -->
+    <div class="custom-modal-backdrop" x-show="showCheckoutModal" x-cloak @click.self="showCheckoutModal = false" 
+        @keydown.window.escape="showCheckoutModal = false"
+        @keydown.window.f1.prevent="setExactAmount()">
+        <div class="custom-modal" @click.stop>
+            <div class="p-5 border-b border-gray-200 bg-slate-50">
+                <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <x-heroicon-o-credit-card class="w-6 h-6 text-blue-400" />
+                    Pembayaran
+                </h3>
+            </div>
+            <div class="p-6 space-y-6">
+                <div class="text-center p-4 bg-primary/10 rounded-xl border border-primary/20">
+                    <p class="text-gray-600 font-bold text-sm mb-1">Total Tagihan</p>
+                    <p class="text-4xl font-bold text-slate-900" x-text="'Rp ' + formatNumber(total)"></p>
                 </div>
-                <div class="p-6 space-y-6">
-                    <div class="text-center p-4 bg-primary/10 rounded-xl border border-primary/20">
-                        <p class="text-gray-600 font-bold text-sm mb-1">Total Tagihan</p>
-                        <p class="text-4xl font-bold text-slate-900">Rp {{ number_format($total, 0, ',', '.') }}</p>
-                    </div>
 
-                    <div class="flex gap-3">
-                        @foreach(['cash' => 'Tunai', 'qris' => 'QRIS', 'transfer' => 'Transfer'] as $key => $label)
-                                    <button class="flex-1 p-3 rounded-lg border-2 transition-all font-bold
-                                                                                                                                                                                                                                               {{ $paymentMethod === $key
-                            ? 'border-primary bg-primary/10 text-slate-900'
-                            : 'border-gray-300 bg-white text-gray-700 hover:border-slate-400' }}"
-                                        wire:click="setPaymentMethod('{{ $key }}')">
-                                        {{ $label }}
-                                    </button>
-                        @endforeach
-                    </div>
+                <div class="flex gap-3">
+                    <button class="flex-1 p-3 rounded-lg border-2 transition-all font-bold"
+                        :class="paymentMethod === 'cash' ? 'border-primary bg-primary/10 text-slate-900' : 'border-gray-300 bg-white text-gray-700 hover:border-slate-400'"
+                        @click="setPaymentMethod('cash')">
+                        Tunai
+                    </button>
+                    <button class="flex-1 p-3 rounded-lg border-2 transition-all font-bold"
+                        :class="paymentMethod === 'qris' ? 'border-primary bg-primary/10 text-slate-900' : 'border-gray-300 bg-white text-gray-700 hover:border-slate-400'"
+                        @click="setPaymentMethod('qris')">
+                        QRIS
+                    </button>
+                    <button class="flex-1 p-3 rounded-lg border-2 transition-all font-bold"
+                        :class="paymentMethod === 'transfer' ? 'border-primary bg-primary/10 text-slate-900' : 'border-gray-300 bg-white text-gray-700 hover:border-slate-400'"
+                        @click="setPaymentMethod('transfer')">
+                        Transfer
+                    </button>
+                </div>
 
-                    @if($paymentMethod === 'cash')
-                        <div class="space-y-4">
-                            <div class="space-y-2">
-                                <label class="text-gray-600 text-xs uppercase font-bold tracking-wider">
-                                    Uang Diterima
-                                </label>
-                                <input type="number" wire:model.live="amountPaid"
-                                    class="w-full bg-white border border-gray-300 rounded-lg p-3 text-slate-900 text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent"
-                                    placeholder="0" x-init="$nextTick(() => $el.focus())" wire:keydown.enter="processPayment">
-                            </div>
-
-                            <div class="grid grid-cols-3 gap-2">
-                                @php $suggestions = [50000, 100000, 20000]; @endphp
-                                @foreach($suggestions as $amt)
-                                    <button
-                                        class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors"
-                                        wire:click="setQuickAmount({{ $amt }})">
-                                        {{ number_format($amt / 1000) }}k
-                                    </button>
-                                @endforeach
-                                <button
-                                    class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors col-span-3"
-                                    wire:click="setExactAmount">
-                                    Uang Pas (F1)
-                                </button>
-                            </div>
-
-                            @if($amountPaid >= $total)
-                                <div class="flex justify-between items-center bg-green-100 p-3 rounded-lg border border-green-300">
-                                    <span class="text-green-700 font-bold">Kembalian</span>
-                                    <span class="text-slate-900 text-xl font-bold">
-                                        Rp {{ number_format($change, 0, ',', '.') }}
-                                    </span>
-                                </div>
-                            @endif
+                <template x-if="paymentMethod === 'cash'">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <label class="text-gray-600 text-xs uppercase font-bold tracking-wider">
+                                Uang Diterima
+                            </label>
+                            <input type="number" x-model="amountPaid" @input="calculateChange()"
+                                class="w-full bg-white border border-gray-300 rounded-lg p-3 text-slate-900 text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="0" @keydown.enter="processPayment()" x-init="$watch('showCheckoutModal', value => value && paymentMethod === 'cash' && $nextTick(() => $el.focus()))">
                         </div>
-                    @endif
-                </div>
-                <div class="p-5 border-t border-gray-200 flex gap-3 bg-slate-50">
-                    <button
-                        class="flex-1 py-3 px-4 rounded-xl border border-gray-300 text-slate-700 hover:bg-slate-100 transition-colors font-bold"
-                        wire:click="closeModal">
-                        Batal
-                    </button>
-                    <button
-                        class="flex-[2] py-3 px-4 rounded-xl bg-primary text-white hover:bg-red-600 transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
-                        wire:click="processPayment" @if($paymentMethod === 'cash' && $amountPaid < $total) disabled @endif>
-                        Proses Pembayaran (Enter)
-                    </button>
-                </div>
-            </div>
-        </div>
-    @endif
 
-    <!-- Discount Modal -->
-    @if($showDiscountModal)
-        <div class="custom-modal-backdrop" wire:click.self="closeModal" x-data @keydown.window.escape="$wire.closeModal()"
-            @keydown.window.f1.prevent="$wire.set('discountType', 0)"
-            @keydown.window.f2.prevent="$wire.set('discountType', 1)">
-            <div class="custom-modal" wire:click.stop style="max-width: 400px;">
-                <div class="p-5 border-b border-gray-200 bg-slate-50">
-                    <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                        <x-heroicon-o-tag class="w-6 h-6 text-yellow-500" /> Tambah Diskon
-                    </h3>
-                </div>
-                <div class="p-6 space-y-6">
-                    <div class="flex bg-slate-200 p-1 rounded-lg">
-                        <button
-                            class="flex-1 py-2 rounded-md text-sm font-bold transition-all {{ $discountType == 0 ? 'bg-primary text-white shadow' : 'text-gray-600' }}"
-                            wire:click="$set('discountType', 0)">
-                            Nominal (Rp) (F1)
-                        </button>
-                        <button
-                            class="flex-1 py-2 rounded-md text-sm font-bold transition-all {{ $discountType == 1 ? 'bg-primary text-white shadow' : 'text-gray-600' }}"
-                            wire:click="$set('discountType', 1)">
-                            Persen (%) (F2)
-                        </button>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors"
+                                @click="setQuickAmount(50000)">50k</button>
+                            <button class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors"
+                                @click="setQuickAmount(100000)">100k</button>
+                            <button class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors"
+                                @click="setQuickAmount(20000)">20k</button>
+                            <button class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors col-span-3"
+                                @click="setExactAmount()">
+                                Uang Pas (F1)
+                            </button>
+                        </div>
+
+                        <template x-if="amountPaid >= total">
+                            <div class="flex justify-between items-center bg-green-100 p-3 rounded-lg border border-green-300">
+                                <span class="text-green-700 font-bold">Kembalian</span>
+                                <span class="text-slate-900 text-xl font-bold" x-text="'Rp ' + formatNumber(change)"></span>
+                            </div>
+                        </template>
                     </div>
-
-                    <input type="number" wire:model="discountValue"
-                        class="w-full bg-white border border-gray-300 rounded-lg p-3 text-slate-900 text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent text-center"
-                        placeholder="0" x-init="$nextTick(() => $el.focus())" wire:keydown.enter="applyDiscount">
-                </div>
-                <div class="p-5 border-t border-gray-200 flex gap-3 bg-slate-50">
-                    <button
-                        class="flex-1 py-3 px-4 rounded-xl border border-gray-300 text-slate-700 hover:bg-slate-100 transition-colors font-bold"
-                        wire:click="closeModal">
-                        Batal
-                    </button>
-                    <button
-                        class="flex-1 py-3 px-4 rounded-xl bg-primary text-white hover:bg-red-600 transition-colors font-bold"
-                        wire:click="applyDiscount">
-                        Terapkan (Enter)
-                    </button>
-                </div>
+                </template>
+            </div>
+            <div class="p-5 border-t border-gray-200 flex gap-3 bg-slate-50">
+                <button
+                    class="flex-1 py-3 px-4 rounded-xl border border-gray-300 text-slate-700 hover:bg-slate-100 transition-colors font-bold"
+                    @click="showCheckoutModal = false">
+                    Batal
+                </button>
+                <button
+                    class="flex-[2] py-3 px-4 rounded-xl bg-primary text-white hover:bg-red-600 transition-colors font-bold shadow-lg shadow-primary/20"
+                    :disabled="paymentMethod === 'cash' && amountPaid < total"
+                    :class="paymentMethod === 'cash' && amountPaid < total ? 'opacity-50 cursor-not-allowed' : ''"
+                    @click="processPayment()">
+                    Proses Pembayaran (Enter)
+                </button>
             </div>
         </div>
-    @endif
+    </div>
 
-    <!-- Item Discount Modal -->
-    @if($showItemDiscountModal)
-        <div class="custom-modal-backdrop" wire:click.self="closeModal" x-data @keydown.window.escape="$wire.closeModal()">
-            <div class="custom-modal" wire:click.stop style="max-width: 400px;">
-                <div class="p-5 border-b border-gray-200 bg-slate-50">
-                    <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                        <x-heroicon-o-tag class="w-6 h-6 text-yellow-500" /> Diskon Item
-                    </h3>
-                </div>
-                <div class="p-6 space-y-6">
-                    <!-- Toggle Type -->
-                    <div class="flex bg-slate-200 p-1 rounded-lg">
-                        <button
-                            class="flex-1 py-2 rounded-md text-sm font-bold transition-all {{ $itemDiscountType == 0 ? 'bg-primary text-white shadow' : 'text-gray-600' }}"
-                            wire:click="$set('itemDiscountType', 0)">
-                            Nominal (Rp)
-                        </button>
-                        <button
-                            class="flex-1 py-2 rounded-md text-sm font-bold transition-all {{ $itemDiscountType == 1 ? 'bg-primary text-white shadow' : 'text-gray-600' }}"
-                            wire:click="$set('itemDiscountType', 1)">
-                            Persen (%)
-                        </button>
-                    </div>
-
-                    <input type="number" wire:model="itemDiscountValue"
-                        class="w-full bg-white border border-gray-300 rounded-lg p-3 text-slate-900 text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent text-center"
-                        placeholder="0" x-init="$nextTick(() => $el.focus())" wire:keydown.enter="applyItemDiscount">
-                    <p class="text-xs text-center text-gray-600">
-                        Kosongkan atau isi 0 untuk menghapus diskon manual.
-                    </p>
-                </div>
-                <div class="p-5 border-t border-gray-200 flex gap-3 bg-slate-50">
+    <!-- Global Discount Modal (Alpine) -->
+    <div class="custom-modal-backdrop" x-show="showGlobalDiscountModal" x-cloak @click.self="showGlobalDiscountModal = false"
+        @keydown.window.escape="showGlobalDiscountModal = false"
+        @keydown.window.f1.prevent="if(showGlobalDiscountModal) globalDiscountType = 0"
+        @keydown.window.f2.prevent="if(showGlobalDiscountModal) globalDiscountType = 1">
+        <div class="custom-modal" @click.stop style="max-width: 400px;">
+            <div class="p-5 border-b border-gray-200 bg-slate-50">
+                <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <x-heroicon-o-tag class="w-6 h-6 text-yellow-500" /> Tambah Diskon
+                </h3>
+            </div>
+            <div class="p-6 space-y-6">
+                <div class="flex bg-slate-200 p-1 rounded-lg">
                     <button
-                        class="flex-1 py-3 px-4 rounded-xl border border-gray-300 text-slate-700 hover:bg-slate-100 transition-colors font-bold"
-                        wire:click="closeModal">
-                        Batal
+                        class="flex-1 py-2 rounded-md text-sm font-bold transition-all"
+                        :class="globalDiscountType == 0 ? 'bg-primary text-white shadow' : 'text-gray-600'"
+                        @click="globalDiscountType = 0">
+                        Nominal (Rp) (F1)
                     </button>
                     <button
-                        class="flex-1 py-3 px-4 rounded-xl bg-primary text-white hover:bg-red-600 transition-colors font-bold"
-                        wire:click="applyItemDiscount">
-                        Simpan
+                        class="flex-1 py-2 rounded-md text-sm font-bold transition-all"
+                        :class="globalDiscountType == 1 ? 'bg-primary text-white shadow' : 'text-gray-600'"
+                        @click="globalDiscountType = 1">
+                        Persen (%) (F2)
                     </button>
                 </div>
+
+                <input type="number" x-model="globalDiscountValue"
+                    class="w-full bg-white border border-gray-300 rounded-lg p-3 text-slate-900 text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent text-center"
+                    placeholder="0" @keydown.enter="applyGlobalDiscount()" x-init="$watch('showGlobalDiscountModal', value => value && $nextTick(() => $el.focus()))">
+            </div>
+            <div class="p-5 border-t border-gray-200 flex gap-3 bg-slate-50">
+                <button
+                    class="flex-1 py-3 px-4 rounded-xl border border-gray-300 text-slate-700 hover:bg-slate-100 transition-colors font-bold"
+                    @click="showGlobalDiscountModal = false">
+                    Batal
+                </button>
+                <button
+                    class="flex-1 py-3 px-4 rounded-xl bg-primary text-white hover:bg-red-600 transition-colors font-bold"
+                    @click="applyGlobalDiscount()">
+                    Terapkan (Enter)
+                </button>
             </div>
         </div>
-    @endif
+    </div>
+
+    <!-- Item Discount Modal (Alpine) -->
+    <div class="custom-modal-backdrop" x-show="showItemDiscountModal" x-cloak @click.self="showItemDiscountModal = false"
+        @keydown.window.escape="showItemDiscountModal = false"
+        @keydown.window.f1.prevent="if(showItemDiscountModal) itemDiscountType = 0"
+        @keydown.window.f2.prevent="if(showItemDiscountModal) itemDiscountType = 1">
+        <div class="custom-modal" @click.stop style="max-width: 400px;">
+            <div class="p-5 border-b border-gray-200 bg-slate-50">
+                <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <x-heroicon-o-tag class="w-6 h-6 text-yellow-500" /> Diskon Item
+                </h3>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- Toggle Type -->
+                <div class="flex bg-slate-200 p-1 rounded-lg">
+                    <button
+                        class="flex-1 py-2 rounded-md text-sm font-bold transition-all"
+                        :class="itemDiscountType == 0 ? 'bg-primary text-white shadow' : 'text-gray-600'"
+                        @click="itemDiscountType = 0">
+                        Nominal (Rp) (F1)
+                    </button>
+                    <button
+                        class="flex-1 py-2 rounded-md text-sm font-bold transition-all"
+                        :class="itemDiscountType == 1 ? 'bg-primary text-white shadow' : 'text-gray-600'"
+                        @click="itemDiscountType = 1">
+                        Persen (%) (F2)
+                    </button>
+                </div>
+
+                <input type="number" x-model="itemDiscountValue"
+                    class="w-full bg-white border border-gray-300 rounded-lg p-3 text-slate-900 text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent text-center"
+                    placeholder="0" @keydown.enter="applyItemDiscount()" x-init="$watch('showItemDiscountModal', value => value && $nextTick(() => $el.focus()))">
+                <p class="text-xs text-center text-gray-600">
+                    Kosongkan atau isi 0 untuk menghapus diskon manual.
+                </p>
+            </div>
+            <div class="p-5 border-t border-gray-200 flex gap-3 bg-slate-50">
+                <button
+                    class="flex-1 py-3 px-4 rounded-xl border border-gray-300 text-slate-700 hover:bg-slate-100 transition-colors font-bold"
+                    @click="showItemDiscountModal = false">
+                    Batal
+                </button>
+                <button
+                    class="flex-1 py-3 px-4 rounded-xl bg-primary text-white hover:bg-red-600 transition-colors font-bold"
+                    @click="applyItemDiscount()">
+                    Simpan
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Profile Modal -->
     @if($showProfileModal)
@@ -883,6 +869,9 @@
                     // Items
                     for (let item of receipt.items) {
                         await print.writeText(item.name, { align: "left" });
+                        if (item.discount_info) {
+                            await print.writeText("  (Disc: " + item.discount_info + ")", { align: "left" });
+                        }
                         // Format: 2x @10.000   20.000
                         let line2_left = item.qty + "x @" + new Intl.NumberFormat('id-ID').format(item.price);
                         let line2_right = new Intl.NumberFormat('id-ID').format(item.total);
@@ -969,7 +958,8 @@
                 }
                 if (e.key === 'F4') {
                     e.preventDefault();
-                    @this.call('openDiscountModal');
+                    // @this.call('openDiscountModal'); // Handled by Alpine now
+                    window.dispatchEvent(new CustomEvent('open-alpine-global-discount'));
                 }
                 if (e.key === 'F10') {
                     e.preventDefault();
@@ -977,9 +967,287 @@
                 }
                 if (e.altKey && e.key === 'Delete') {
                     e.preventDefault();
-                    @this.call('clearCart');
+                    // @this.call('clearCart'); // Handled by Alpine now
+                    window.dispatchEvent(new CustomEvent('clear-alpine-cart'));
                 }
             });
+        });
+
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('posTerminal', () => ({
+                products: @json($productsJson),
+                categories: @json($categoriesJson),
+                cart: [],
+                searchQuery: '',
+                selectedCategory: null,
+                perPage: 30, // For lazy loading simulation
+                
+                subtotal: 0,
+                total: 0,
+                tax: 0,
+                discount: 0,
+                
+                showItemDiscountModal: false,
+                editingItemIndex: null,
+                itemDiscountType: 0, // 0: Nominal, 1: Percent
+                itemDiscountValue: 0,
+
+                showGlobalDiscountModal: false,
+                globalDiscountType: 0, // 0: Nominal, 1: Percent
+                globalDiscountValue: 0,
+
+                showCheckoutModal: false,
+                paymentMethod: 'cash',
+                amountPaid: 0,
+                change: 0,
+
+                init() {
+                    this.$watch('cart', () => this.calculateTotals());
+                    window.addEventListener('clear-alpine-cart', () => this.clearCart());
+                    window.addEventListener('open-alpine-global-discount', () => this.showGlobalDiscountModal = true);
+                    
+                    // Listen for Livewire updates to products if necessary (e.g. stock updates after checkout)
+                    this.$watch('products', () => console.log('Products updated'));
+                },
+
+                get filteredProducts() {
+                    let filtered = this.products;
+                    
+                    if (this.selectedCategory) {
+                        filtered = filtered.filter(p => p.category_id === this.selectedCategory);
+                    }
+                    
+                    if (this.searchQuery) {
+                        const q = this.searchQuery.toLowerCase();
+                        filtered = filtered.filter(p => 
+                            p.name.toLowerCase().includes(q) || 
+                            (p.barcode && p.barcode.toLowerCase().includes(q))
+                        );
+                    }
+                    
+                    return filtered.slice(0, this.perPage);
+                },
+
+                selectCategory(id) {
+                    this.selectedCategory = (this.selectedCategory === id) ? null : id;
+                    this.perPage = 30; // Reset pagination on category change
+                },
+
+                loadMore() {
+                    this.perPage += 30;
+                },
+
+                addToCart(productId) {
+                    const product = this.products.find(p => p.id === productId);
+                    if (!product) return;
+
+                    if (!product.unlimited_stock && product.stock <= 0) {
+                        this.notify('error', 'Stok produk habis');
+                        return;
+                    }
+
+                    const cartItem = this.cart.find(item => item.product_id === productId);
+                    if (cartItem) {
+                        if (!product.unlimited_stock && cartItem.quantity >= product.stock) {
+                            this.notify('warning', 'Stok tidak mencukupi');
+                            return;
+                        }
+                        cartItem.quantity++;
+                        cartItem.total = cartItem.quantity * cartItem.price;
+                    } else {
+                        this.cart.push({
+                            product_id: product.id,
+                            name: product.name,
+                            price: parseFloat(product.selling_price),
+                            original_price: parseFloat(product.selling_price),
+                            quantity: 1,
+                            total: parseFloat(product.selling_price),
+                            image: product.image,
+                            stock: product.stock,
+                            unlimited_stock: product.unlimited_stock,
+                            discount_info: null,
+                            manual_discount: false
+                        });
+                    }
+                    this.notify('success', product.name + ' ditambahkan');
+                },
+
+                incrementQuantity(index) {
+                    const item = this.cart[index];
+                    if (item.unlimited_stock || item.quantity < item.stock) {
+                        item.quantity++;
+                        item.total = item.quantity * item.price;
+                    } else {
+                        this.notify('warning', 'Stok tidak mencukupi');
+                    }
+                },
+
+                decrementQuantity(index) {
+                    if (this.cart[index].quantity > 1) {
+                        this.cart[index].quantity--;
+                        this.cart[index].total = this.cart[index].quantity * this.cart[index].price;
+                    } else {
+                        this.removeFromCart(index);
+                    }
+                },
+
+                removeFromCart(index) {
+                    const name = this.cart[index].name;
+                    this.cart.splice(index, 1);
+                    this.notify('info', name + ' dihapus');
+                },
+
+                clearCart() {
+                    this.cart = [];
+                    this.notify('info', 'Keranjang dikosongkan');
+                },
+
+                addToCartByBarcode(barcode) {
+                    const product = this.products.find(p => p.barcode === barcode);
+                    if (product) {
+                        this.addToCart(product.id);
+                        this.searchQuery = ''; // Clear search in Alpine
+                    } else {
+                        // If it's not a barcode, it might be a partial name from the input
+                        // But enter usually means barcode scan in POS
+                        this.notify('error', 'Produk tidak ditemukan: ' + barcode);
+                    }
+                },
+
+                openCheckout() {
+                    if (this.cart.length === 0) {
+                        this.notify('warning', 'Keranjang masih kosong');
+                        return;
+                    }
+                    this.amountPaid = 0;
+                    this.change = 0;
+                    this.paymentMethod = 'cash';
+                    this.showCheckoutModal = true;
+                },
+
+                setPaymentMethod(method) {
+                    this.paymentMethod = method;
+                },
+
+                setQuickAmount(amt) {
+                    this.amountPaid = amt;
+                    this.calculateChange();
+                },
+
+                setExactAmount() {
+                    this.amountPaid = this.total;
+                    this.calculateChange();
+                },
+
+                calculateChange() {
+                    const paid = parseFloat(this.amountPaid) || 0;
+                    this.change = Math.max(0, paid - this.total);
+                },
+
+                processPayment() {
+                    if (this.paymentMethod === 'cash' && this.amountPaid < this.total) {
+                        this.notify('error', 'Pembayaran kurang');
+                        return;
+                    }
+
+                    // Pre-sync state to Livewire
+                    @this.set('cart', this.cart);
+                    @this.set('discountValue', this.globalDiscountValue);
+                    @this.set('discountType', this.globalDiscountType);
+                    @this.set('amountPaid', this.amountPaid);
+                    @this.set('paymentMethod', this.paymentMethod);
+                    
+                    // Trigger the existing Livewire processPayment method
+                    @this.call('processPayment');
+                    
+                    this.showCheckoutModal = false;
+                },
+                // Pre-item discount display is back. Now I'm preparing the global discount migration.
+                openItemDiscountModal(index) {
+                    this.editingItemIndex = index;
+                    const item = this.cart[index];
+                    this.itemDiscountType = item.itemDiscountType || 0;
+                    this.itemDiscountValue = item.itemDiscountValue || 0;
+                    this.showItemDiscountModal = true;
+                },
+
+                applyItemDiscount() {
+                    const index = this.editingItemIndex;
+                    const item = this.cart[index];
+                    const val = parseFloat(this.itemDiscountValue) || 0;
+                    
+                    item.manual_discount = true;
+                    item.itemDiscountType = this.itemDiscountType;
+                    item.itemDiscountValue = val;
+                    
+                    let newPrice = item.original_price;
+                    if (val > 0) {
+                        if (this.itemDiscountType == 1) { // Percent
+                            newPrice = item.original_price * (1 - (val / 100));
+                            item.discount_info = val + '%';
+                        } else { // Nominal
+                            newPrice = Math.max(0, item.original_price - val);
+                            item.discount_info = 'Rp ' + this.formatNumber(val);
+                        }
+                    } else {
+                        item.discount_info = null;
+                    }
+                    
+                    item.price = newPrice;
+                    item.total = item.quantity * item.price;
+                    
+                    this.showItemDiscountModal = false;
+                    this.calculateTotals();
+                    this.notify('success', 'Diskon item diterapkan');
+                },
+
+                applyGlobalDiscount() {
+                    const val = parseFloat(this.globalDiscountValue) || 0;
+                    this.discount = 0;
+                    
+                    if (val > 0) {
+                        if (this.globalDiscountType == 1) { // Percent
+                            this.discount = this.subtotal * (val / 100);
+                        } else { // Nominal
+                            this.discount = val;
+                        }
+                    }
+                    
+                    this.showGlobalDiscountModal = false;
+                    this.calculateTotals();
+                    this.notify('success', 'Diskon global diterapkan');
+                },
+
+                calculateTotals() {
+                    this.subtotal = this.cart.reduce((sum, item) => sum + item.total, 0);
+                    
+                    // Simple global discount calculation
+                    this.discount = 0;
+                    const val = parseFloat(this.globalDiscountValue) || 0;
+                    if (val > 0) {
+                        if (this.globalDiscountType == 1) { // Percent
+                            this.discount = this.subtotal * (val / 100);
+                        } else { // Nominal
+                            this.discount = val;
+                        }
+                    }
+
+                    this.total = Math.max(0, this.subtotal - this.discount); 
+                },
+
+                formatNumber(num) {
+                    return new Intl.NumberFormat('id-ID').format(num);
+                },
+
+                notify(type, message) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type, message } }));
+                },
+
+                getImageUrl(path) {
+                    if (!path) return "{{ asset('images/placeholder.png') }}";
+                    return "/storage/" + path;
+                }
+            }));
         });
     </script>
 </div>

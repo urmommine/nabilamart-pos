@@ -62,6 +62,7 @@ class OrderService
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['price'],
                         'total_price' => $item['total'],
+                        'discount_info' => $item['discount_info'] ?? null,
                     ]);
 
                     // Deduct stock only for limited stock products
