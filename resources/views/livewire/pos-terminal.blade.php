@@ -158,8 +158,7 @@
                                 class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 focus:border-primary border border-l-0 border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark h-full placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark px-4 text-base font-medium leading-normal transition-all"
                                 placeholder="Cari produk atau scan barcode (F2)" x-model="searchQuery"
                                 x-on:keydown.enter.prevent="let val = searchQuery; searchQuery = ''; addToCartByBarcode(val);"
-                                x-on:clear-search.window="searchQuery = ''"
-                                id="search-input" x-ref="searchInput" />
+                                x-on:clear-search.window="searchQuery = ''" id="search-input" x-ref="searchInput" />
                         </div>
                     </label>
                 </div>
@@ -188,7 +187,8 @@
                         <!-- Product Card -->
                         <div class="group cursor-pointer flex flex-col gap-3 p-3 rounded-xl bg-surface-light dark:bg-surface-dark border border-transparent hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-[#2a1f1f] transition-all duration-200 shadow-sm hover:shadow-lg hover:shadow-primary/5"
                             @click.stop="addToCart(product.id)">
-                            <div class="relative w-full aspect-square bg-slate-200 dark:bg-[#382929] rounded-lg overflow-hidden flex items-center justify-center">
+                            <div
+                                class="relative w-full aspect-square bg-slate-200 dark:bg-[#382929] rounded-lg overflow-hidden flex items-center justify-center">
                                 <template x-if="product.image">
                                     <div class="absolute inset-0 bg-center bg-cover bg-no-repeat"
                                         :style="'background-image: url(' + getImageUrl(product.image) + ');'"></div>
@@ -197,18 +197,22 @@
                                     <div class="absolute inset-0 bg-center bg-cover bg-no-repeat"
                                         :style="'background-image: url({{ asset('images/placeholder.png') }});'"></div>
                                 </template>
-                                <div class="absolute top-2 right-2 bg-primary text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
+                                <div
+                                    class="absolute top-2 right-2 bg-primary text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
                                     Rp <span x-text="formatNumber(product.selling_price)"></span>
                                 </div>
                                 <template x-if="!product.unlimited_stock && product.stock <= 0">
                                     <div class="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                        <span class="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">HABIS</span>
+                                        <span
+                                            class="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">HABIS</span>
                                     </div>
                                 </template>
                             </div>
                             <div>
-                                <p class="text-slate-900 dark:text-white text-base font-bold leading-tight mb-1 group-hover:text-primary transition-colors line-clamp-2" x-text="product.name"></p>
-                                <p class="text-text-muted-light dark:text-text-muted-dark text-xs font-normal leading-normal">
+                                <p class="text-slate-900 dark:text-white text-base font-bold leading-tight mb-1 group-hover:text-primary transition-colors line-clamp-2"
+                                    x-text="product.name"></p>
+                                <p
+                                    class="text-text-muted-light dark:text-text-muted-dark text-xs font-normal leading-normal">
                                     Stok: <span x-text="product.unlimited_stock ? '∞' : product.stock"></span>
                                 </p>
                             </div>
@@ -216,7 +220,8 @@
                     </template>
 
                     <template x-if="filteredProducts.length === 0">
-                        <div class="col-span-full flex flex-col items-center justify-center text-text-muted-light dark:text-text-muted-dark py-10">
+                        <div
+                            class="col-span-full flex flex-col items-center justify-center text-text-muted-light dark:text-text-muted-dark py-10">
                             <span class="material-symbols-outlined text-6xl mb-4 opacity-50">search_off</span>
                             <p>Tidak ada produk ditemukan</p>
                         </div>
@@ -267,30 +272,39 @@
             <div class="flex-1 overflow-y-auto p-4 space-y-3">
                 <template x-for="(item, index) in cart" :key="item.product_id">
                     <!-- Cart Item -->
-                    <div class="flex items-center gap-4 bg-slate-100 dark:bg-[#1e1515] p-3 rounded-lg border border-transparent hover:border-border-light dark:hover:border-border-dark transition-colors group">
-                        <div class="bg-slate-200 dark:bg-[#382929] rounded-md shrink-0 size-14 overflow-hidden relative flex items-center justify-center">
+                    <div
+                        class="flex items-center gap-4 bg-slate-100 dark:bg-[#1e1515] p-3 rounded-lg border border-transparent hover:border-border-light dark:hover:border-border-dark transition-colors group">
+                        <div
+                            class="bg-slate-200 dark:bg-[#382929] rounded-md shrink-0 size-14 overflow-hidden relative flex items-center justify-center">
                             <template x-if="item.image">
                                 <div class="absolute inset-0 bg-center bg-cover bg-no-repeat"
                                     :style="'background-image: url(' + getImageUrl(item.image) + ');'"></div>
                             </template>
                             <template x-if="!item.image">
-                                <span class="material-symbols-outlined text-text-muted-light dark:text-text-muted-dark opacity-50">inventory_2</span>
+                                <span
+                                    class="material-symbols-outlined text-text-muted-light dark:text-text-muted-dark opacity-50">inventory_2</span>
                             </template>
                         </div>
                         <div class="flex flex-col flex-1 min-w-0">
                             <div class="flex justify-between items-start">
-                                <p class="text-slate-900 dark:text-white text-sm font-medium leading-tight line-clamp-1" x-text="item.name"></p>
+                                <p class="text-slate-900 dark:text-white text-sm font-medium leading-tight line-clamp-1"
+                                    x-text="item.name"></p>
                                 <div class="text-right">
                                     <template x-if="item.price < item.original_price">
-                                        <p class="text-xs text-text-muted-light dark:text-text-muted-dark line-through" x-text="'Rp ' + formatNumber(item.original_price * item.quantity)"></p>
+                                        <p class="text-xs text-text-muted-light dark:text-text-muted-dark line-through"
+                                            x-text="'Rp ' + formatNumber(item.original_price * item.quantity)"></p>
                                     </template>
-                                    <p class="text-slate-900 dark:text-white text-sm font-bold" x-text="'Rp ' + formatNumber(item.total)"></p>
+                                    <p class="text-slate-900 dark:text-white text-sm font-bold"
+                                        x-text="'Rp ' + formatNumber(item.total)"></p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 mt-0.5">
-                                <p class="text-text-muted-light dark:text-text-muted-dark text-xs font-normal" x-text="'Rp ' + formatNumber(item.price) + ' / unit'"></p>
+                                <p class="text-text-muted-light dark:text-text-muted-dark text-xs font-normal"
+                                    x-text="'Rp ' + formatNumber(item.price) + ' / unit'"></p>
                                 <template x-if="item.discount_info">
-                                    <span class="text-[10px] font-bold px-1.5 py-0.5 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded" x-text="item.discount_info"></span>
+                                    <span
+                                        class="text-[10px] font-bold px-1.5 py-0.5 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded"
+                                        x-text="item.discount_info"></span>
                                 </template>
                                 <button @click="openItemDiscountModal(index)"
                                     class="text-xs text-primary hover:underline ml-1">Edit Diskon</button>
@@ -302,7 +316,8 @@
                                         @click="decrementQuantity(index)">
                                         <span class="material-symbols-outlined text-sm">remove</span>
                                     </button>
-                                    <span class="text-slate-900 dark:text-white text-sm font-medium w-6 text-center" x-text="item.quantity"></span>
+                                    <span class="text-slate-900 dark:text-white text-sm font-medium w-6 text-center"
+                                        x-text="item.quantity"></span>
                                     <button
                                         class="size-6 flex items-center justify-center rounded bg-slate-200 dark:bg-[#382929] text-slate-700 dark:text-white hover:bg-primary hover:text-white transition-colors"
                                         @click="incrementQuantity(index)">
@@ -320,7 +335,8 @@
                 </template>
 
                 <template x-if="cart.length === 0">
-                    <div class="flex flex-col items-center justify-center h-full text-text-muted-light dark:text-text-muted-dark opacity-50 py-10">
+                    <div
+                        class="flex flex-col items-center justify-center h-full text-text-muted-light dark:text-text-muted-dark opacity-50 py-10">
                         <span class="material-symbols-outlined text-6xl mb-2">shopping_basket</span>
                         <p>Keranjang Kosong</p>
                     </div>
@@ -332,12 +348,14 @@
                 <div class="space-y-2">
                     <div class="flex justify-between text-text-muted-light dark:text-text-muted-dark text-sm">
                         <span>Subtotal</span>
-                        <span class="text-slate-900 dark:text-white font-medium" x-text="'Rp ' + formatNumber(subtotal)"></span>
+                        <span class="text-slate-900 dark:text-white font-medium"
+                            x-text="'Rp ' + formatNumber(subtotal)"></span>
                     </div>
                     <template x-if="tax > 0">
                         <div class="flex justify-between text-text-muted-light dark:text-text-muted-dark text-sm">
                             <span x-text="'Pajak (' + tax + '%)'"></span>
-                            <span class="text-slate-900 dark:text-white font-medium" x-text="'Rp ' + formatNumber((subtotal - discount) * (tax / 100))"></span>
+                            <span class="text-slate-900 dark:text-white font-medium"
+                                x-text="'Rp ' + formatNumber((subtotal - discount) * (tax / 100))"></span>
                         </div>
                     </template>
                     <template x-if="discount > 0">
@@ -350,7 +368,8 @@
                 <div
                     class="flex justify-between items-end pt-2 border-t border-slate-200 dark:border-[#382929] border-dashed">
                     <span class="text-slate-900 dark:text-white font-medium text-lg">Total</span>
-                    <span class="text-slate-900 dark:text-white font-bold text-3xl" x-text="'Rp ' + formatNumber(total)"></span>
+                    <span class="text-slate-900 dark:text-white font-bold text-3xl"
+                        x-text="'Rp ' + formatNumber(total)"></span>
                 </div>
                 <template x-if="cart.length > 0">
                     <div class="grid grid-cols-[1fr_2fr] gap-3 pt-2">
@@ -381,7 +400,8 @@
                                         class="w-4 h-4 text-green-500" /> Pajak On (F10)</span>
                             </template>
                             <template x-if="!(tax > 0)">
-                                <span class="flex items-center gap-1"><x-heroicon-o-x-circle class="w-4 h-4 text-red-500" />
+                                <span class="flex items-center gap-1"><x-heroicon-o-x-circle
+                                        class="w-4 h-4 text-red-500" />
                                     Pajak Off (F10)</span>
                             </template>
                         </button>
@@ -424,9 +444,8 @@
     </style>
 
     <!-- Checkout Modal (Alpine) -->
-    <div class="custom-modal-backdrop" x-show="showCheckoutModal" x-cloak @click.self="showCheckoutModal = false" 
-        @keydown.window.escape="showCheckoutModal = false"
-        @keydown.window.f1.prevent="setExactAmount()">
+    <div class="custom-modal-backdrop" x-show="showCheckoutModal" x-cloak @click.self="showCheckoutModal = false"
+        @keydown.window.escape="showCheckoutModal = false" @keydown.window.f1.prevent="setExactAmount()">
         <div class="custom-modal" @click.stop>
             <div class="p-5 border-b border-gray-200 bg-slate-50">
                 <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
@@ -466,26 +485,33 @@
                             </label>
                             <input type="number" x-model="amountPaid" @input="calculateChange()"
                                 class="w-full bg-white border border-gray-300 rounded-lg p-3 text-slate-900 text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent"
-                                placeholder="0" @keydown.enter="processPayment()" x-init="$watch('showCheckoutModal', value => value && paymentMethod === 'cash' && $nextTick(() => $el.focus()))">
+                                placeholder="0" @keydown.enter="processPayment()"
+                                x-init="$watch('showCheckoutModal', value => value && paymentMethod === 'cash' && $nextTick(() => $el.focus()))">
                         </div>
 
                         <div class="grid grid-cols-3 gap-2">
-                            <button class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors"
+                            <button
+                                class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors"
                                 @click="setQuickAmount(50000)">50k</button>
-                            <button class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors"
+                            <button
+                                class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors"
                                 @click="setQuickAmount(100000)">100k</button>
-                            <button class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors"
+                            <button
+                                class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors"
                                 @click="setQuickAmount(20000)">20k</button>
-                            <button class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors col-span-3"
+                            <button
+                                class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors col-span-3"
                                 @click="setExactAmount()">
                                 Uang Pas (F1)
                             </button>
                         </div>
 
                         <template x-if="amountPaid >= total">
-                            <div class="flex justify-between items-center bg-green-100 p-3 rounded-lg border border-green-300">
+                            <div
+                                class="flex justify-between items-center bg-green-100 p-3 rounded-lg border border-green-300">
                                 <span class="text-green-700 font-bold">Kembalian</span>
-                                <span class="text-slate-900 text-xl font-bold" x-text="'Rp ' + formatNumber(change)"></span>
+                                <span class="text-slate-900 text-xl font-bold"
+                                    x-text="'Rp ' + formatNumber(change)"></span>
                             </div>
                         </template>
                     </div>
@@ -509,8 +535,8 @@
     </div>
 
     <!-- Global Discount Modal (Alpine) -->
-    <div class="custom-modal-backdrop" x-show="showGlobalDiscountModal" x-cloak @click.self="showGlobalDiscountModal = false"
-        @keydown.window.escape="showGlobalDiscountModal = false"
+    <div class="custom-modal-backdrop" x-show="showGlobalDiscountModal" x-cloak
+        @click.self="showGlobalDiscountModal = false" @keydown.window.escape="showGlobalDiscountModal = false"
         @keydown.window.f1.prevent="if(showGlobalDiscountModal) globalDiscountType = 0"
         @keydown.window.f2.prevent="if(showGlobalDiscountModal) globalDiscountType = 1">
         <div class="custom-modal" @click.stop style="max-width: 400px;">
@@ -521,14 +547,12 @@
             </div>
             <div class="p-6 space-y-6">
                 <div class="flex bg-slate-200 p-1 rounded-lg">
-                    <button
-                        class="flex-1 py-2 rounded-md text-sm font-bold transition-all"
+                    <button class="flex-1 py-2 rounded-md text-sm font-bold transition-all"
                         :class="globalDiscountType == 0 ? 'bg-primary text-white shadow' : 'text-gray-600'"
                         @click="globalDiscountType = 0">
                         Nominal (Rp) (F1)
                     </button>
-                    <button
-                        class="flex-1 py-2 rounded-md text-sm font-bold transition-all"
+                    <button class="flex-1 py-2 rounded-md text-sm font-bold transition-all"
                         :class="globalDiscountType == 1 ? 'bg-primary text-white shadow' : 'text-gray-600'"
                         @click="globalDiscountType = 1">
                         Persen (%) (F2)
@@ -537,7 +561,8 @@
 
                 <input type="number" x-model="globalDiscountValue"
                     class="w-full bg-white border border-gray-300 rounded-lg p-3 text-slate-900 text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent text-center"
-                    placeholder="0" @keydown.enter="applyGlobalDiscount()" x-init="$watch('showGlobalDiscountModal', value => value && $nextTick(() => $el.focus()))">
+                    placeholder="0" @keydown.enter="applyGlobalDiscount()"
+                    x-init="$watch('showGlobalDiscountModal', value => value && $nextTick(() => $el.focus()))">
             </div>
             <div class="p-5 border-t border-gray-200 flex gap-3 bg-slate-50">
                 <button
@@ -555,8 +580,8 @@
     </div>
 
     <!-- Item Discount Modal (Alpine) -->
-    <div class="custom-modal-backdrop" x-show="showItemDiscountModal" x-cloak @click.self="showItemDiscountModal = false"
-        @keydown.window.escape="showItemDiscountModal = false"
+    <div class="custom-modal-backdrop" x-show="showItemDiscountModal" x-cloak
+        @click.self="showItemDiscountModal = false" @keydown.window.escape="showItemDiscountModal = false"
         @keydown.window.f1.prevent="if(showItemDiscountModal) itemDiscountType = 0"
         @keydown.window.f2.prevent="if(showItemDiscountModal) itemDiscountType = 1">
         <div class="custom-modal" @click.stop style="max-width: 400px;">
@@ -568,14 +593,12 @@
             <div class="p-6 space-y-6">
                 <!-- Toggle Type -->
                 <div class="flex bg-slate-200 p-1 rounded-lg">
-                    <button
-                        class="flex-1 py-2 rounded-md text-sm font-bold transition-all"
+                    <button class="flex-1 py-2 rounded-md text-sm font-bold transition-all"
                         :class="itemDiscountType == 0 ? 'bg-primary text-white shadow' : 'text-gray-600'"
                         @click="itemDiscountType = 0">
                         Nominal (Rp) (F1)
                     </button>
-                    <button
-                        class="flex-1 py-2 rounded-md text-sm font-bold transition-all"
+                    <button class="flex-1 py-2 rounded-md text-sm font-bold transition-all"
                         :class="itemDiscountType == 1 ? 'bg-primary text-white shadow' : 'text-gray-600'"
                         @click="itemDiscountType = 1">
                         Persen (%) (F2)
@@ -584,7 +607,8 @@
 
                 <input type="number" x-model="itemDiscountValue"
                     class="w-full bg-white border border-gray-300 rounded-lg p-3 text-slate-900 text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent text-center"
-                    placeholder="0" @keydown.enter="applyItemDiscount()" x-init="$watch('showItemDiscountModal', value => value && $nextTick(() => $el.focus()))">
+                    placeholder="0" @keydown.enter="applyItemDiscount()"
+                    x-init="$watch('showItemDiscountModal', value => value && $nextTick(() => $el.focus()))">
                 <p class="text-xs text-center text-gray-600">
                     Kosongkan atau isi 0 untuk menghapus diskon manual.
                 </p>
@@ -735,7 +759,14 @@
                     console.log("Printer Connected Successfully", print);
                 },
                 onFailed: (message) => {
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Gagal Konek: ' + message } }));
+                    let errorBody = message;
+
+                    // Specific guidance for claimInterface error on USB
+                    if (pType === 'usb_web' && message.includes('claimInterface')) {
+                        errorBody = 'Gagal claim interface. Pastikan driver printer sudah diganti ke WinUSB menggunakan Zadig.';
+                    }
+
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Gagal Konek: ' + errorBody } }));
                     console.error("Connection Failed:", message);
                 }
             });
@@ -959,13 +990,13 @@
                 searchQuery: '',
                 selectedCategory: null,
                 perPage: 30, // For lazy loading simulation
-                
+
                 subtotal: 0,
                 total: 0,
                 tax: @js($tax),
                 defaultTax: @js($defaultTax),
                 discount: 0,
-                
+
                 showItemDiscountModal: false,
                 editingItemIndex: null,
                 itemDiscountType: 0, // 0: Nominal, 1: Percent
@@ -983,10 +1014,10 @@
                 init() {
                     this.$watch('cart', () => this.calculateTotals());
                     window.addEventListener('clear-alpine-cart', () => this.clearCart());
-                    
+
                     // Unified Global Keyboard Shortcuts
                     window.addEventListener('keydown', (e) => this.handleShortcuts(e));
-                    
+
                     // Listen for Livewire updates to products if necessary (e.g. stock updates after checkout)
                     this.$watch('products', () => console.log('Products updated'));
                 },
@@ -1021,19 +1052,19 @@
 
                 get filteredProducts() {
                     let filtered = this.products;
-                    
+
                     if (this.selectedCategory) {
                         filtered = filtered.filter(p => p.category_id === this.selectedCategory);
                     }
-                    
+
                     if (this.searchQuery) {
                         const q = this.searchQuery.toLowerCase();
-                        filtered = filtered.filter(p => 
-                            p.name.toLowerCase().includes(q) || 
+                        filtered = filtered.filter(p =>
+                            p.name.toLowerCase().includes(q) ||
                             (p.barcode && p.barcode.toLowerCase().includes(q))
                         );
                     }
-                    
+
                     return filtered.slice(0, this.perPage);
                 },
 
@@ -1166,10 +1197,10 @@
                     @this.set('tax', this.tax);
                     @this.set('amountPaid', this.amountPaid);
                     @this.set('paymentMethod', this.paymentMethod);
-                    
+
                     // Trigger the existing Livewire processPayment method
                     @this.call('processPayment');
-                    
+
                     this.showCheckoutModal = false;
                 },
                 // Pre-item discount display is back. Now I'm preparing the global discount migration.
@@ -1185,11 +1216,11 @@
                     const index = this.editingItemIndex;
                     const item = this.cart[index];
                     const val = parseFloat(this.itemDiscountValue) || 0;
-                    
+
                     item.manual_discount = true;
                     item.itemDiscountType = this.itemDiscountType;
                     item.itemDiscountValue = val;
-                    
+
                     let newPrice = item.original_price;
                     if (val > 0) {
                         if (this.itemDiscountType == 1) { // Percent
@@ -1202,10 +1233,10 @@
                     } else {
                         item.discount_info = null;
                     }
-                    
+
                     item.price = newPrice;
                     item.total = item.quantity * item.price;
-                    
+
                     this.showItemDiscountModal = false;
                     this.calculateTotals();
                     this.notify('success', 'Diskon item diterapkan');
@@ -1214,7 +1245,7 @@
                 applyGlobalDiscount() {
                     const val = parseFloat(this.globalDiscountValue) || 0;
                     this.discount = 0;
-                    
+
                     if (val > 0) {
                         if (this.globalDiscountType == 1) { // Percent
                             this.discount = this.subtotal * (val / 100);
@@ -1222,7 +1253,7 @@
                             this.discount = val;
                         }
                     }
-                    
+
                     this.showGlobalDiscountModal = false;
                     this.calculateTotals();
                     this.notify('success', 'Diskon global diterapkan');
@@ -1241,7 +1272,7 @@
 
                 calculateTotals() {
                     this.subtotal = this.cart.reduce((sum, item) => sum + item.total, 0);
-                    
+
                     // Simple global discount calculation
                     this.discount = 0;
                     const val = parseFloat(this.globalDiscountValue) || 0;
@@ -1253,7 +1284,7 @@
                         }
                     }
 
-                    this.total = Math.max(0, this.subtotal - this.discount); 
+                    this.total = Math.max(0, this.subtotal - this.discount);
                 },
 
                 formatNumber(num) {

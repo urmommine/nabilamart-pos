@@ -110,9 +110,8 @@ function connectPrinter(type = 'bluetooth') {
         return;
     }
 
-    // Always re-init if type changed or not exists
     try {
-        // PrintHub Init
+        // Always re-init so we get a fresh attempt for the chosen type
         printerInstance = new PrintHub.init({
             paperSize: "58",
             printerType: phType
@@ -133,16 +132,25 @@ function connectPrinter(type = 'bluetooth') {
             window.btPrinter = print;
             new FilamentNotification()
                 .title('Printer Terhubung')
-                .body('Siap mencetak via ' + type + '.')
+                .body('Siap mencetak via ' + (phType === 'usb' ? 'USB' : 'Bluetooth') + '.')
                 .success()
                 .send();
         },
         onFailed: (message) => {
+            let errorBody = message;
+
+            // Check for common USB claimInterface error
+            if (phType === 'usb' && message.includes('claimInterface')) {
+                errorBody = 'Gagal claim interface. Pastikan driver printer sudah diganti ke WinUSB menggunakan Zadig.';
+            }
+
             new FilamentNotification()
                 .title('Koneksi Gagal')
-                .body(message)
+                .body(errorBody)
                 .danger()
                 .send();
+
+            console.error("Connection Failed:", message);
         }
     });
 }

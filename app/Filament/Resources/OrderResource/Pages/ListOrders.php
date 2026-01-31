@@ -13,10 +13,19 @@ class ListOrders extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('connect_printer')
+            \Filament\Actions\ActionGroup::make([
+                Action::make('connect_bluetooth')
+                    ->label('Bluetooth')
+                    ->icon('heroicon-o-signal')
+                    ->action(fn() => $this->dispatch('connect-printer', type: 'bluetooth')),
+                Action::make('connect_usb')
+                    ->label('USB')
+                    ->icon('heroicon-o-bolt')
+                    ->action(fn() => $this->dispatch('connect-printer', type: 'usb')),
+            ])
                 ->label('Hubungkan Printer')
                 ->icon('heroicon-o-printer')
-                ->action(fn() => $this->dispatch('connect-printer', type: \App\Models\StoreSetting::get(\App\Models\StoreSetting::PRINTER_TYPE)))
+                ->button()
                 ->color('gray'),
         ];
     }
