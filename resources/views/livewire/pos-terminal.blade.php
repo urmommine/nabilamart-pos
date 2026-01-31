@@ -159,7 +159,7 @@
                                 placeholder="Cari produk atau scan barcode (F2)" x-model="searchQuery"
                                 x-on:keydown.enter.prevent="let val = searchQuery; searchQuery = ''; addToCartByBarcode(val);"
                                 x-on:clear-search.window="searchQuery = ''"
-                                id="search-input" />
+                                id="search-input" x-ref="searchInput" />
                         </div>
                     </label>
                 </div>
@@ -373,15 +373,17 @@
                             <x-heroicon-o-tag class="w-5 h-5 mr-1 text-yellow-500" /> Diskon (F4)
                         </button>
                         <button
-                            class="col-span-1 flex items-center justify-center rounded-xl {{ $tax > 0 ? 'bg-slate-200 dark:bg-[#382929] text-slate-700 dark:text-white hover:bg-slate-300 dark:hover:bg-[#4a3636]' : 'bg-surface-light dark:bg-surface-dark border border-dashed border-text-muted-light dark:border-text-muted-dark text-text-muted-light dark:text-text-muted-dark hover:text-slate-900 dark:hover:text-white' }} transition-all py-2 text-sm font-bold"
-                            wire:click="toggleTax">
-                            @if($tax > 0)
+                            class="col-span-1 flex items-center justify-center rounded-xl transition-all py-2 text-sm font-bold"
+                            :class="tax > 0 ? 'bg-slate-200 dark:bg-[#382929] text-slate-700 dark:text-white hover:bg-slate-300 dark:hover:bg-[#4a3636]' : 'bg-surface-light dark:bg-surface-dark border border-dashed border-text-muted-light dark:border-text-muted-dark text-text-muted-light dark:text-text-muted-dark hover:text-slate-900 dark:hover:text-white'"
+                            @click="toggleTax()">
+                            <template x-if="tax > 0">
                                 <span class="flex items-center gap-1"><x-heroicon-o-check-circle
                                         class="w-4 h-4 text-green-500" /> Pajak On (F10)</span>
-                            @else
+                            </template>
+                            <template x-if="!(tax > 0)">
                                 <span class="flex items-center gap-1"><x-heroicon-o-x-circle class="w-4 h-4 text-red-500" />
                                     Pajak Off (F10)</span>
-                            @endif
+                            </template>
                         </button>
                     </div>
                 </template>
@@ -946,31 +948,7 @@
                     });
             });
 
-            // Keyboard Shortcuts
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'F2') {
-                    e.preventDefault();
-                    document.getElementById('search-input').focus();
-                }
-                if (e.key === 'F9') {
-                    e.preventDefault();
-                    @this.call('openCheckout');
-                }
-                if (e.key === 'F4') {
-                    e.preventDefault();
-                    // @this.call('openDiscountModal'); // Handled by Alpine now
-                    window.dispatchEvent(new CustomEvent('open-alpine-global-discount'));
-                }
-                if (e.key === 'F10') {
-                    e.preventDefault();
-                    @this.call('toggleTax');
-                }
-                if (e.altKey && e.key === 'Delete') {
-                    e.preventDefault();
-                    // @this.call('clearCart'); // Handled by Alpine now
-                    window.dispatchEvent(new CustomEvent('clear-alpine-cart'));
-                }
-            });
+            // Keyboard Shortcuts (Now handled by Alpine.js init)
         });
 
         document.addEventListener('alpine:init', () => {
@@ -984,7 +962,8 @@
                 
                 subtotal: 0,
                 total: 0,
-                tax: 0,
+                tax: @js($tax),
+                defaultTax: @js($defaultTax),
                 discount: 0,
                 
                 showItemDiscountModal: false,
@@ -1004,10 +983,40 @@
                 init() {
                     this.$watch('cart', () => this.calculateTotals());
                     window.addEventListener('clear-alpine-cart', () => this.clearCart());
-                    window.addEventListener('open-alpine-global-discount', () => this.showGlobalDiscountModal = true);
+                    
+                    // Unified Global Keyboard Shortcuts
+                    window.addEventListener('keydown', (e) => this.handleShortcuts(e));
                     
                     // Listen for Livewire updates to products if necessary (e.g. stock updates after checkout)
                     this.$watch('products', () => console.log('Products updated'));
+                },
+
+                handleShortcuts(e) {
+                    // Ignore global shortcuts if any modal is open
+                    if (this.showGlobalDiscountModal || this.showItemDiscountModal || this.showCheckoutModal) {
+                        return;
+                    }
+
+                    if (e.key === 'F2') {
+                        e.preventDefault();
+                        this.$refs.searchInput.focus();
+                    }
+                    if (e.key === 'F4') {
+                        e.preventDefault();
+                        this.showGlobalDiscountModal = true;
+                    }
+                    if (e.key === 'F9') {
+                        e.preventDefault();
+                        this.openCheckout();
+                    }
+                    if (e.key === 'F10') {
+                        e.preventDefault();
+                        this.toggleTax();
+                    }
+                    if (e.altKey && e.key === 'Delete') {
+                        e.preventDefault();
+                        this.clearCart();
+                    }
                 },
 
                 get filteredProducts() {
@@ -1154,6 +1163,7 @@
                     @this.set('cart', this.cart);
                     @this.set('discountValue', this.globalDiscountValue);
                     @this.set('discountType', this.globalDiscountType);
+                    @this.set('tax', this.tax);
                     @this.set('amountPaid', this.amountPaid);
                     @this.set('paymentMethod', this.paymentMethod);
                     
@@ -1216,6 +1226,17 @@
                     this.showGlobalDiscountModal = false;
                     this.calculateTotals();
                     this.notify('success', 'Diskon global diterapkan');
+                },
+
+                toggleTax() {
+                    if (this.tax > 0) {
+                        this.tax = 0;
+                        this.notify('info', 'Pajak dinonaktifkan');
+                    } else {
+                        this.tax = this.defaultTax;
+                        this.notify('success', 'Pajak diaktifkan (' + this.tax + '%)');
+                    }
+                    this.calculateTotals();
                 },
 
                 calculateTotals() {

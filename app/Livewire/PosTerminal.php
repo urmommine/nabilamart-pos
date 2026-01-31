@@ -525,20 +525,30 @@ class PosTerminal extends Component
             return;
         }
 
-        if ($this->paymentMethod === 'cash' && (float) $this->amountPaid < $this->total) {
-            $this->dispatch('notify', type: 'error', message: 'Jumlah bayar kurang dari total');
-            return;
+        // Recalculate everything on the server side based on the synced cart
+        $tempSubtotal = array_sum(array_column($this->cart, 'total'));
+
+        $tempDiscount = 0;
+        if ($this->discountType == 1 && (float) $this->discountValue > 0) {
+            $tempDiscount = $tempSubtotal * ((float) $this->discountValue / 100);
+        } else {
+            $tempDiscount = (float) $this->discountValue;
         }
+
+        $afterDiscount = $tempSubtotal - $tempDiscount;
+        $tempTax = $this->tax > 0 ? $afterDiscount * ($this->tax / 100) : 0;
+        $tempTotal = $afterDiscount + $tempTax;
+        $tempChange = max(0, (float) $this->amountPaid - $tempTotal);
 
         try {
             $orderData = [
-                'subtotal' => (float) $this->subtotal,
-                'discount' => (float) $this->discount,
-                'tax' => (float) ($this->tax > 0 ? ($this->subtotal - $this->discount) * ($this->tax / 100) : 0),
-                'total_amount' => (float) $this->total,
+                'subtotal' => (float) $tempSubtotal,
+                'discount' => (float) $tempDiscount,
+                'tax' => (float) $tempTax,
+                'total_amount' => (float) $tempTotal,
                 'payment_method' => $this->paymentMethod,
                 'amount_paid' => (float) $this->amountPaid,
-                'change' => (float) $this->change,
+                'change' => (float) $tempChange,
                 'customer_id' => $this->selectedCustomerId,
             ];
 
