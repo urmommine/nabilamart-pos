@@ -1014,6 +1014,9 @@
                 init() {
                     this.$watch('cart', () => this.calculateTotals());
                     window.addEventListener('clear-alpine-cart', () => this.clearCart());
+                    window.addEventListener('refresh-products', (e) => {
+                        this.products = e.detail.products || e.detail;
+                    });
 
                     // Unified Global Keyboard Shortcuts
                     window.addEventListener('keydown', (e) => this.handleShortcuts(e));
@@ -1030,7 +1033,14 @@
 
                     if (e.key === 'F2') {
                         e.preventDefault();
-                        this.$refs.searchInput.focus();
+                        this.$nextTick(() => {
+                            if (this.$refs.searchInput) {
+                                this.$refs.searchInput.focus();
+                                this.$refs.searchInput.select();
+                            } else {
+                                document.getElementById('search-input')?.focus();
+                            }
+                        });
                     }
                     if (e.key === 'F4') {
                         e.preventDefault();

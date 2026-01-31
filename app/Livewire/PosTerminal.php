@@ -563,6 +563,7 @@ class PosTerminal extends Component
 
             // Sync with Alpine
             $this->dispatch('clear-alpine-cart');
+            $this->dispatch('refresh-products', products: Product::active()->get(['id', 'category_id', 'name', 'selling_price', 'image', 'stock', 'unlimited_stock', 'barcode']));
 
             // Trigger print
             if ($this->printerType === 'bluetooth' || $this->printerType === 'usb_web') {
