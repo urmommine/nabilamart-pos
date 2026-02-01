@@ -11,7 +11,7 @@ class LatestOrdersWidget extends BaseWidget
 {
     protected static ?int $sort = 3;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected static ?string $heading = 'Transaksi Terakhir';
 
@@ -41,13 +41,13 @@ class LatestOrdersWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('payment_method')
                     ->label('Bayar')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'cash' => 'success',
                         'qris' => 'info',
                         'transfer' => 'warning',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
                         'cash' => 'Tunai',
                         'qris' => 'QRIS',
                         'transfer' => 'Transfer',
@@ -56,13 +56,13 @@ class LatestOrdersWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('payment_status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'paid' => 'success',
                         'pending' => 'warning',
                         'cancelled' => 'danger',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
                         'paid' => '✓ Lunas',
                         'pending' => 'Pending',
                         'cancelled' => 'Batal',
@@ -71,15 +71,13 @@ class LatestOrdersWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Waktu')
                     ->dateTime('H:i')
-                    ->description(fn (Order $record): string => $record->created_at->format('d M Y')),
+                    ->description(fn(Order $record): string => $record->created_at->format('d M Y')),
             ])
             ->actions([
-                Tables\Actions\Action::make('view')
+                Tables\Actions\ViewAction::make()
                     ->label('Detail')
-                    ->icon('heroicon-o-eye')
-                    ->url(fn (Order $record): string => 
-                        route('filament.admin.resources.orders.view', ['record' => $record])
-                    ),
+                    ->slideOver()
+                    ->infolist(\App\Filament\Resources\OrderResource::getInfolistSchema()),
             ])
             ->emptyStateHeading('Belum ada transaksi')
             ->emptyStateDescription('Transaksi akan muncul di sini setelah ada penjualan.')
