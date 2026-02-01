@@ -82,18 +82,18 @@ class ProductResource extends Resource
                                     ->label('Harga Beli (Modal)')
                                     ->numeric()
                                     ->prefix('Rp')
-                                    ->default(0)
+                                    //->default(0)
                                     ->visible(fn(Get $get): bool => $get('track_cost') ?? true),
                                 Forms\Components\TextInput::make('selling_price')
                                     ->label('Harga Jual')
                                     ->numeric()
                                     ->prefix('Rp')
-                                    ->required()
-                                    ->default(0),
+                                    ->required(),
+                                //->default(0),
                                 Forms\Components\TextInput::make('stock')
                                     ->label('Stok Saat Ini')
                                     ->numeric()
-                                    ->default(0)
+                                    //->default(0)
                                     ->visible(fn(Get $get): bool => !($get('unlimited_stock') ?? false)),
                                 Forms\Components\TextInput::make('min_stock')
                                     ->label('Stok Minimum (Alert)')
@@ -193,7 +193,7 @@ class ProductResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
-                ->slideOver(),
+                    ->slideOver(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

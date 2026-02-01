@@ -302,17 +302,17 @@ class OrderResource extends Resource
                                 ->label('Produk')
                                 ->weight('bold'),
                             Infolists\Components\TextEntry::make('quantity')
-                                ->label('Jumlah')
-                                ->alignCenter(),
+                                ->label('Jumlah'),
+                                //->alignCenter(),
                             Infolists\Components\TextEntry::make('unit_price')
                                 ->label('Harga Satuan')
-                                ->money('IDR')
-                                ->alignEnd(),
+                                ->money('IDR'),
+                               // ->alignEnd(),
                             Infolists\Components\TextEntry::make('total_price')
                                 ->label('Total Harga')
                                 ->money('IDR')
-                                ->weight('bold')
-                                ->alignEnd(),
+                                ->weight('bold'),
+                               // ->alignEnd(),
                         ])->columns(4)
                         ->grid(1),
                 ]),
