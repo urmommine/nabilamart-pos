@@ -1,6 +1,33 @@
-// Global Printer Instance
-let printerInstance = null;
-window.btPrinter = null;
+// Helper for notifications in Admin (Filament-style)
+function sendAdminNotification(title, message, type = 'success') {
+    if (typeof FilamentNotification !== 'undefined') {
+        let notification = new FilamentNotification()
+            .title(title);
+
+        if (message) {
+            notification.body(message);
+        }
+
+        // Apply status (danger, success, warning, info)
+        if (type === 'error') {
+            notification.danger();
+        } else if (type === 'success') {
+            notification.success();
+        } else if (type === 'warning') {
+            notification.warning();
+        } else {
+            notification.info();
+        }
+
+        notification.send();
+    } else {
+        // Fallback to POS-style notification if POS listener exists on this page
+        window.dispatchEvent(new CustomEvent('notify', {
+            detail: { type, message: title + (message ? ': ' + message : '') }
+        }));
+        console.log(`[Admin Printer] ${type.toUpperCase()}: ${title} - ${message}`);
+    }
+}
 
 document.addEventListener('livewire:init', () => {
     // Listen for Connect Event
@@ -14,11 +41,7 @@ document.addEventListener('livewire:init', () => {
         let receipt = data.data || data; // handle potential wrapper
 
         if (!window.btPrinter) {
-            new FilamentNotification()
-                .title('Printer Belum Terhubung')
-                .body('Klik tombol Connect Printer terlebih dahulu.')
-                .danger()
-                .send();
+            sendAdminNotification('Printer Belum Terhubung', 'Klik tombol Connect Printer terlebih dahulu.', 'error');
             return;
         }
 
@@ -77,18 +100,11 @@ document.addEventListener('livewire:init', () => {
             await print.writeText(receipt.footer, { align: "center" });
             await print.writeLineBreak(3); // Feed
 
-            new FilamentNotification()
-                .title('Berhasil Mencetak')
-                .success()
-                .send();
+            sendAdminNotification('Berhasil Mencetak', '', 'success');
 
         } catch (e) {
             console.error(e);
-            new FilamentNotification()
-                .title('Gagal Mencetak')
-                .body(e.message)
-                .danger()
-                .send();
+            sendAdminNotification('Gagal Mencetak', e.message, 'error');
         }
     });
 });
@@ -102,11 +118,7 @@ function connectPrinter(type = 'bluetooth') {
     if (type === 'bluetooth') phType = 'bluetooth';
 
     if (typeof PrintHub === 'undefined') {
-        new FilamentNotification()
-            .title('Library Error')
-            .body('PrintHub library not loaded.')
-            .danger()
-            .send();
+        sendAdminNotification('Library Error', 'PrintHub library not loaded.', 'error');
         return;
     }
 
@@ -119,37 +131,24 @@ function connectPrinter(type = 'bluetooth') {
         console.log("PrintHub instance " + phType + " created");
     } catch (e) {
         console.error("Error creating printer instance:", e);
-        new FilamentNotification()
-            .title('Init Error')
-            .body(e.message)
-            .danger()
-            .send();
+        sendAdminNotification('Init Error', e.message, 'error');
         return;
     }
 
     printerInstance.connectToPrint({
         onReady: (print) => {
             window.btPrinter = print;
-            new FilamentNotification()
-                .title('Printer Terhubung')
-                .body('Siap mencetak via ' + (phType === 'usb' ? 'USB' : 'Bluetooth') + '.')
-                .success()
-                .send();
+            sendAdminNotification('Printer Terhubung', 'Siap mencetak via ' + (phType === 'usb' ? 'USB' : 'Bluetooth') + '.', 'success');
         },
         onFailed: (message) => {
             let errorBody = message;
 
             // Check for common USB claimInterface error
             if (phType === 'usb' && message.includes('claimInterface')) {
-                errorBody = 'Gagal claim interface. Pastikan driver printer sudah diganti ke WinUSB menggunakan Zadig.';
+                errorBody = 'Gagal claim interface. HARAP TUTUP TAB POS TERLEBIH DAHULU (Perangkat USB hanya bisa diklaim oleh satu tab). Jika masih gagal, pastikan driver WinUSB aktif.';
             }
 
-            new FilamentNotification()
-                .title('Koneksi Gagal')
-                .body(errorBody)
-                .danger()
-                .send();
-
+            sendAdminNotification('Koneksi Gagal', errorBody, 'error');
             console.error("Connection Failed:", message);
         }
     });

@@ -23,13 +23,13 @@
                 class="hidden lg:flex gap-4 text-text-muted-light dark:text-text-muted-dark text-xs font-medium bg-surface-light dark:bg-surface-dark px-4 py-2 rounded-lg border border-border-light/50 dark:border-border-dark/50">
                 <span class="flex items-center gap-1"><kbd
                         class="bg-slate-200 dark:bg-[#382929] px-1.5 py-0.5 rounded text-slate-700 dark:text-white border border-slate-300 dark:border-[#533c3d]">F2</kbd>
-                    Search</span>
+                    Cari</span>
                 <span class="flex items-center gap-1"><kbd
                         class="bg-slate-200 dark:bg-[#382929] px-1.5 py-0.5 rounded text-slate-700 dark:text-white border border-slate-300 dark:border-[#533c3d]">F9</kbd>
-                    Pay</span>
+                    Bayar</span>
                 <span class="flex items-center gap-1"><kbd
                         class="bg-slate-200 dark:bg-[#382929] px-1.5 py-0.5 rounded text-slate-700 dark:text-white border border-slate-300 dark:border-[#533c3d]">F10</kbd>
-                    Tax</span>
+                    Pajak</span>
             </div>
             <div class="flex gap-2">
                 <!-- Connect Printer Button (Bluetooth & USB Web) -->
