@@ -192,7 +192,8 @@ class ProductResource extends Resource
                     ->query(fn($query) => $query->where('unlimited_stock', false)->whereColumn('stock', '<=', 'min_stock')),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                Tables\Actions\ViewAction::make()
+                ->slideOver(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

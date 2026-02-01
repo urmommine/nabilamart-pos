@@ -128,7 +128,8 @@ class OrderResource extends Resource
                     ->query(fn($query) => $query->whereDate('created_at', today())),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->slideOver(),
                 Tables\Actions\Action::make('print')
                     ->label('Cetak Invoice')
                     ->icon('heroicon-o-printer')
@@ -186,70 +187,130 @@ class OrderResource extends Resource
     {
         return $infolist
             ->schema([
-                Infolists\Components\Section::make('Detail Transaksi')
+                Infolists\Components\Grid::make(2)
                     ->schema([
-                        Infolists\Components\TextEntry::make('invoice_number')
-                            ->label('No. Invoice'),
-                        Infolists\Components\TextEntry::make('user.name')
-                            ->label('Kasir'),
-                        Infolists\Components\TextEntry::make('created_at')
-                            ->label('Tanggal')
-                            ->dateTime('d M Y H:i:s'),
-                        Infolists\Components\TextEntry::make('payment_method')
-                            ->label('Metode Bayar')
-                            ->badge(),
-                        Infolists\Components\TextEntry::make('payment_status')
-                            ->label('Status')
-                            ->badge(),
-                    ])->columns(3),
+                        Infolists\Components\Group::make([
+                            Infolists\Components\Section::make('Informasi Transaksi')
+                                ->icon('heroicon-o-information-circle')
+                                ->schema([
+                                    Infolists\Components\TextEntry::make('invoice_number')
+                                        ->label('No. Invoice')
+                                        ->weight('bold')
+                                        ->copyable()
+                                        ->color('primary'),
+                                    Infolists\Components\TextEntry::make('user.name')
+                                        ->label('Kasir')
+                                        ->icon('heroicon-m-user'),
+                                    Infolists\Components\TextEntry::make('customer.name')
+                                        ->label('Pelanggan')
+                                        ->placeholder('Walk-in Customer')
+                                        ->icon('heroicon-m-user-group'),
+                                    Infolists\Components\TextEntry::make('created_at')
+                                        ->label('Waktu Transaksi')
+                                        ->dateTime('d M Y, H:i:s')
+                                        ->icon('heroicon-m-clock'),
+                                ])->columns(2),
 
-                Infolists\Components\Section::make('Rincian Pembayaran')
-                    ->schema([
-                        Infolists\Components\TextEntry::make('subtotal')
-                            ->label('Subtotal')
-                            ->money('IDR'),
-                        Infolists\Components\TextEntry::make('discount')
-                            ->label('Diskon')
-                            ->money('IDR'),
-                        Infolists\Components\TextEntry::make('tax')
-                            ->label('Pajak')
-                            ->money('IDR'),
-                        Infolists\Components\TextEntry::make('total_amount')
-                            ->label('Total')
-                            ->money('IDR')
-                            ->weight('bold'),
-                        Infolists\Components\TextEntry::make('amount_paid')
-                            ->label('Dibayar')
-                            ->money('IDR'),
-                        Infolists\Components\TextEntry::make('change')
-                            ->label('Kembalian')
-                            ->money('IDR'),
-                    ])->columns(3),
+                            Infolists\Components\Section::make('Status & Pembayaran')
+                                ->icon('heroicon-o-credit-card')
+                                ->schema([
+                                    Infolists\Components\TextEntry::make('payment_status')
+                                        ->label('Status Pembayaran')
+                                        ->badge()
+                                        ->color(fn(string $state): string => match ($state) {
+                                            'paid' => 'success',
+                                            'pending' => 'warning',
+                                            'cancelled' => 'danger',
+                                            default => 'gray',
+                                        })
+                                        ->formatStateUsing(fn(string $state): string => match ($state) {
+                                            'paid' => 'Lunas',
+                                            'pending' => 'Pending',
+                                            'cancelled' => 'Dibatalkan',
+                                            default => $state,
+                                        }),
+                                    Infolists\Components\TextEntry::make('payment_method')
+                                        ->label('Metode Pembayaran')
+                                        ->badge()
+                                        ->color(fn(string $state): string => match ($state) {
+                                            'cash' => 'success',
+                                            'qris' => 'info',
+                                            'transfer' => 'warning',
+                                            default => 'gray',
+                                        })
+                                        ->formatStateUsing(fn(string $state): string => match ($state) {
+                                            'cash' => 'Tunai',
+                                            'qris' => 'QRIS',
+                                            'transfer' => 'Transfer',
+                                            default => $state,
+                                        }),
+                                ])->columns(2),
+                        ]),
 
-                Infolists\Components\Section::make('Item Transaksi')
+                        Infolists\Components\Group::make([
+                            Infolists\Components\Section::make('Ringkasan Biaya')
+                                ->icon('heroicon-o-banknotes')
+                                ->schema([
+                                    Infolists\Components\TextEntry::make('subtotal')
+                                        ->label('Subtotal')
+                                        ->money('IDR'),
+                                    Infolists\Components\TextEntry::make('discount')
+                                        ->label('Diskon')
+                                        ->money('IDR')
+                                        ->color('danger'),
+                                    Infolists\Components\TextEntry::make('tax')
+                                        ->label('Pajak')
+                                        ->money('IDR'),
+                                    Infolists\Components\TextEntry::make('total_amount')
+                                        ->label('Total Akhir')
+                                        ->money('IDR')
+                                        ->weight('black')
+                                        ->size('lg')
+                                        ->color('success'),
+                                    Infolists\Components\TextEntry::make('amount_paid')
+                                        ->label('Jumlah Bayar')
+                                        ->money('IDR'),
+                                    Infolists\Components\TextEntry::make('change')
+                                        ->label('Kembalian')
+                                        ->money('IDR')
+                                        ->color('primary'),
+                                ])->columns(2),
+
+                            Infolists\Components\Section::make('Catatan')
+                                ->icon('heroicon-o-chat-bubble-left-right')
+                                ->schema([
+                                    Infolists\Components\TextEntry::make('notes')
+                                        ->label('')
+                                        ->placeholder('Tidak ada catatan tambahan.')
+                                        ->weight('italic'),
+                                ])->collapsed(),
+                        ]),
+                    ]),
+
+                Infolists\Components\Section::make('Daftar Produk yang Dibeli')
+                    ->icon('heroicon-o-shopping-bag')
                     ->schema([
                         Infolists\Components\RepeatableEntry::make('items')
                             ->label('')
                             ->schema([
                                 Infolists\Components\TextEntry::make('product_name')
-                                    ->label('Produk'),
+                                    ->label('Produk')
+                                    ->weight('bold'),
                                 Infolists\Components\TextEntry::make('quantity')
-                                    ->label('Qty'),
+                                    ->label('Jumlah')
+                                    ->alignCenter(),
                                 Infolists\Components\TextEntry::make('unit_price')
-                                    ->label('Harga')
-                                    ->money('IDR'),
+                                    ->label('Harga Satuan')
+                                    ->money('IDR')
+                                    ->alignEnd(),
                                 Infolists\Components\TextEntry::make('total_price')
-                                    ->label('Total')
-                                    ->money('IDR'),
-                            ])->columns(4),
+                                    ->label('Total Harga')
+                                    ->money('IDR')
+                                    ->weight('bold')
+                                    ->alignEnd(),
+                            ])->columns(4)
+                            ->grid(1),
                     ]),
-
-                Infolists\Components\Section::make('Catatan')
-                    ->schema([
-                        Infolists\Components\TextEntry::make('notes')
-                            ->label('')
-                            ->placeholder('Tidak ada catatan'),
-                    ])->collapsed(),
             ]);
     }
 
@@ -264,7 +325,6 @@ class OrderResource extends Resource
     {
         return [
             'index' => Pages\ListOrders::route('/'),
-            'view' => Pages\ViewOrder::route('/{record}'),
         ];
     }
 
