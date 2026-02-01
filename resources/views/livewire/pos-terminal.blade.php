@@ -158,7 +158,9 @@
                                 class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 focus:border-primary border border-l-0 border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark h-full placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark px-4 text-base font-medium leading-normal transition-all"
                                 placeholder="Cari produk atau scan barcode (F2)" x-model="searchQuery"
                                 x-on:keydown.enter.prevent="let val = searchQuery; searchQuery = ''; addToCartByBarcode(val);"
-                                x-on:clear-search.window="searchQuery = ''" id="search-input" x-ref="searchInput" />
+                                x-on:clear-search.window="searchQuery = ''; $el.focus();"
+                                x-on:keydown.window="if(!['INPUT','TEXTAREA','SELECT'].includes($event.target.tagName) && !$event.ctrlKey && !$event.metaKey && $event.key.length === 1) { $el.focus(); }"
+                                x-init="$el.focus()" id="search-input" x-ref="searchInput" />
                         </div>
                     </label>
                 </div>
