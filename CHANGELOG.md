@@ -14,5 +14,5 @@ All notable changes to this project will be documented in this file.
 ### Modified
 - **PosTerminal**: Updated logic for payment status validation and processing.
 - **OrderService**: Refined order service logic to support new payment statuses.
-- **Views**: Updated `pos-terminal.blade.php` to reflect backend changes and improve UI aesthetics (Status Dropdown, Order Summary).
+- **Views**: Updated `pos-terminal.blade.php` to reflect backend changes, improve UI aesthetics, and localized checkout labels to Indonesian.
 - **Migration**: Added backticks to column names for safety and used `Schema::disableForeignKeyConstraints()` for better compatibility.

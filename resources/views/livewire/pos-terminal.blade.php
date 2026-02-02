@@ -501,7 +501,7 @@
             <div class="w-full md:w-7/12 bg-white dark:bg-slate-900 p-6 flex flex-col overflow-y-auto">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Payment Details</h3>
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Detail Pembayaran</h3>
                         <p class="text-slate-500 text-xs">Lengkapi detail transaksi di bawah ini.</p>
                     </div>
                     <button @click="showCheckoutModal = false"
@@ -524,8 +524,8 @@
                     <div class="flex-1 space-y-4">
                         <!-- Amount Input -->
                         <div x-show="paymentMethod === 'cash'">
-                            <label class="block text-xs font-bold text-slate-700 dark:text-gray-300 mb-1">Payment
-                                Amount</label>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-gray-300 mb-1">Nominal
+                                Diterima</label>
                             <div class="relative">
                                 <span
                                     class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
@@ -568,8 +568,8 @@
 
                         <!-- Payment Method -->
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 dark:text-gray-300 mb-2">Payment
-                                Method</label>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-gray-300 mb-2">Metode
+                                Pembayaran</label>
                             <div class="grid grid-cols-3 gap-2">
                                 <button
                                     class="relative p-2 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 h-20"
@@ -610,10 +610,10 @@
                         <!-- Description -->
                         <div>
                             <label
-                                class="block text-xs font-bold text-slate-700 dark:text-gray-300 mb-1">Description</label>
+                                class="block text-xs font-bold text-slate-700 dark:text-gray-300 mb-1">Catatan</label>
                             <textarea wire:model="note"
                                 class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-slate-700 text-xs focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm placeholder-slate-300 resize-none h-16"
-                                placeholder="Add notes..."></textarea>
+                                placeholder="Tambah catatan..."></textarea>
                         </div>
                     </div>
                 </template>
