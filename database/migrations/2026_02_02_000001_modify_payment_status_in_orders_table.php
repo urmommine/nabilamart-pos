@@ -14,7 +14,10 @@ return new class extends Migration {
         // SQLite does not support MODIFY COLUMN directly for ENUMs/Constraints.
         // We use the "Create, Copy, Swap" method to be robust across SQLite and MySQL w/o DBAL.
 
-        // 1. Create new table with updated schema
+        // 1. Ensure clean state
+        Schema::dropIfExists('orders_new');
+
+        // 2. Create new table with updated schema
         Schema::create('orders_new', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -38,22 +41,20 @@ return new class extends Migration {
             $table->index('created_at');
         });
 
-        // 2. Copy data from old table to new table
+        // 3. Copy data from old table to new table
         // We select explicit columns to ensure mapping is correct even if order differs slightly
-        $columns = 'id, user_id, customer_id, invoice_number, subtotal, discount, tax, total_amount, payment_method, amount_paid, change, payment_status, notes, created_at, updated_at';
+        // We use backticks to handle reserved keywords like 'change' in MySQL
+        $columns = '`id`, `user_id`, `customer_id`, `invoice_number`, `subtotal`, `discount`, `tax`, `total_amount`, `payment_method`, `amount_paid`, `change`, `payment_status`, `notes`, `created_at`, `updated_at`';
         DB::statement("INSERT INTO orders_new ($columns) SELECT $columns FROM orders");
 
         // 3. Swap tables
-        if (DB::getDriverName() === 'sqlite') {
-            DB::statement('PRAGMA foreign_keys=OFF;');
-        }
+        // 3. Swap tables
+        Schema::disableForeignKeyConstraints();
 
         Schema::drop('orders');
         Schema::rename('orders_new', 'orders');
 
-        if (DB::getDriverName() === 'sqlite') {
-            DB::statement('PRAGMA foreign_keys=ON;');
-        }
+        Schema::enableForeignKeyConstraints();
     }
 
     /**

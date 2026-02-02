@@ -455,39 +455,36 @@
 
             <!-- Left Panel: Order Summary -->
             <div
-                class="w-full md:w-5/12 bg-slate-50 dark:bg-slate-800 p-6 flex flex-col justify-between border-r border-slate-100 dark:border-slate-700 relative overflow-hidden">
-                <!-- Decorative Circle -->
-                <div
-                    class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-white dark:bg-slate-700 rounded-full shadow-sm flex items-center justify-center mb-8">
-                    <span class="material-symbols-outlined text-6xl text-primary opacity-80">receipt_long</span>
-                </div>
-
-                <div class="relative z-10">
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Order Summary</p>
-                    <h2 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight"
+                class="w-full md:w-5/12 bg-slate-50 dark:bg-slate-800 p-10 flex flex-col justify-between border-r border-slate-100 dark:border-slate-700 relative overflow-hidden">
+                <div class="relative z-10 text-center">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Total Tagihan</p>
+                    <h2 class="text-5xl font-black text-green-600 dark:text-green-500 tracking-tighter"
                         x-text="'Rp ' + formatNumber(total)"></h2>
-                    <p class="text-slate-400 text-xs mt-1">Invoice #INV-{{ now()->format('Ymd') }}-001</p>
+                    <p class="text-slate-400 text-sm mt-2">Invoice #INV-{{ now()->format('Ymd') }}-001</p>
                 </div>
 
                 <div class="relative z-10 text-center py-10">
-                    <p class="text-slate-400 text-xs text-center max-w-[200px] mx-auto leading-relaxed">
+                    <div class="mb-6">
+                        <span class="material-symbols-outlined text-8xl text-green-600/10">receipt_long</span>
+                    </div>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm max-w-[250px] mx-auto leading-relaxed">
                         Selesaikan pembayaran untuk memproses pesanan ini.
                     </p>
                 </div>
 
-                <!-- Status Dropdown (User Requested) -->
+                <!-- Status Dropdown -->
                 <div
-                    class="relative z-10 bg-white dark:bg-slate-700 p-3 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-600">
-                    <div class="flex items-center justify-between mb-1">
-                        <span class="text-[10px] font-bold text-slate-500 uppercase">Status Pembayaran</span>
-                        <span class="w-2 h-2 rounded-full" :class="{
-                                 'bg-green-500': paymentStatus === 'paid',
-                                 'bg-red-500': paymentStatus === 'unpaid',
-                                 'bg-orange-500': paymentStatus === 'debt'
+                    class="relative z-10 bg-white dark:bg-slate-700 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-600">
+                    <div class="flex items-center justify-between mb-2 px-1">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Status Pembayaran</span>
+                        <span class="w-3 h-3 rounded-full" :class="{
+                                 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]': paymentStatus === 'paid',
+                                 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]': paymentStatus === 'unpaid',
+                                 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]': paymentStatus === 'debt'
                              }"></span>
                     </div>
                     <select wire:model.live="paymentStatus"
-                        class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-xs font-bold text-slate-700 dark:text-gray-200 focus:ring-2 focus:ring-primary cursor-pointer py-2 pl-3 pr-8">
+                        class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-bold text-slate-700 dark:text-gray-200 focus:ring-2 focus:ring-green-500 cursor-pointer py-3 px-4">
                         <option value="paid">Lunas (Paid)</option>
                         <option value="unpaid">Belum Bayar (Unpaid)</option>
                         <option value="debt">Hutang (Debt)</option>
@@ -624,7 +621,7 @@
                         :class="(paymentStatus === 'paid' && paymentMethod === 'cash' && amountPaid < total) ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700 shadow-red-600/30'"
                         :disabled="(paymentStatus === 'paid' && paymentMethod === 'cash' && amountPaid < total)"
                         @click="processPayment()">
-                        <span>Proceed Payment</span>
+                        <span>Proses Pembayaran (ENTER)</span>
                         <span class="material-symbols-outlined text-xl">arrow_forward</span>
                     </button>
                 </div>
