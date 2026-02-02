@@ -12,8 +12,9 @@
                 </h2>
                 <div class="flex items-center gap-2 mt-0.5">
                     <span class="block size-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
-                    <span class="text-xs text-text-muted-light dark:text-text-muted-dark font-medium">Online •
-                        {{ now()->format('d M Y') }}</span>
+                    <span class="text-xs text-text-muted-light dark:text-text-muted-dark font-medium">
+                        {{ config('app.version') }} • Online • {{ now()->format('d M Y') }}
+                    </span>
                 </div>
             </div>
         </div>
@@ -34,11 +35,16 @@
             <div class="flex gap-2">
                 <!-- Connect Printer Button (Bluetooth & USB Web) -->
                 @if($printerType === 'bluetooth' || $printerType === 'usb_web')
-                    <button onclick="connectPrinter()"
-                        class="flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-surface-light dark:bg-surface-dark text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-[#382929] transition-colors border border-border-light/50 dark:border-border-dark/50"
+                    <button onclick="connectPrinter()" @click="printerGestureRequired = false"
+                        class="flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-surface-light dark:bg-surface-dark text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-[#382929] transition-colors border border-border-light/50 dark:border-border-dark/50 relative"
+                        :class="printerGestureRequired ? 'ring-2 ring-primary animate-pulse shadow-[0_0_15px_rgba(234,42,51,0.5)]' : ''"
                         title="Connect Printer ({{ $printerType === 'bluetooth' ? 'Bluetooth' : 'USB' }})">
                         <span
                             class="material-symbols-outlined">{{ $printerType === 'bluetooth' ? 'bluetooth' : 'usb' }}</span>
+                        <!-- Notification Dot if gesture required -->
+                        <template x-if="printerGestureRequired">
+                            <span class="absolute top-1 right-1 size-2 bg-primary rounded-full border border-white"></span>
+                        </template>
                     </button>
                 @endif
 
@@ -447,8 +453,7 @@
 
     <!-- Checkout Modal (Reference Design) -->
     <div class="custom-modal-backdrop" x-show="showCheckoutModal" x-cloak @click.self="showCheckoutModal = false"
-        @keydown.window.escape="showCheckoutModal = false" 
-        @keydown.window.f1.prevent="setExactAmount()"
+        @keydown.window.escape="showCheckoutModal = false" @keydown.window.f1.prevent="setExactAmount()"
         @keydown.window.enter="if(showCheckoutModal && !['TEXTAREA', 'BUTTON'].includes($event.target.tagName)) processPayment()">
         <div class="custom-modal md:max-w-4xl w-full mx-4 rounded-3xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xl flex flex-col md:flex-row max-h-[90vh] md:h-[550px]"
             @click.stop>
@@ -526,8 +531,7 @@
                                     class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
                                 <input type="number" x-model="amountPaid" @input="calculateChange()"
                                     class="w-full pl-12 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-lg font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm placeholder-slate-300"
-                                    placeholder="0" x-ref="paymentInput"
-                                    @keydown.enter="processPayment()"
+                                    placeholder="0" x-ref="paymentInput" @keydown.enter="processPayment()"
                                     x-init="$watch('showCheckoutModal', value => { if (value && paymentMethod === 'cash') setTimeout(() => $el.focus(), 100) });
                                             $watch('paymentMethod', value => { if (value === 'cash' && showCheckoutModal) setTimeout(() => $el.focus(), 100) })">
                             </div>
@@ -626,7 +630,7 @@
                     </button>
                 </div>
             </div>
-        </div>  
+        </div>
     </div>
 
     <!-- Global Discount Modal (Alpine) -->
@@ -869,17 +873,22 @@
 
         async function autoConnectPrinter() {
             const pType = window.posPrinterType || 'bluetooth';
-            if (typeof PrintHub === 'undefined') return;
+            console.log("Printer auto-connect: " + pType);
+            if (typeof PrintHub === 'undefined') {
+                console.warn("PrintHub not defined during autoConnectPrinter");
+                return;
+            }
 
             // USB Auto-Connect
             if (pType === 'usb_web' && navigator.usb) {
                 try {
                     const devices = await navigator.usb.getDevices();
                     if (devices.length > 0) {
-                        console.log("Mencoba koneksi otomatis ke perangkat USB:", devices[0]);
+                        console.log("USB device found, connecting...");
 
                         const originalRequest = navigator.usb.requestDevice;
-                        navigator.usb.requestDevice = () => Promise.resolve(devices[0]);
+                        // Use a more robust patch that specifically returns the first known device
+                        navigator.usb.requestDevice = function () { return Promise.resolve(devices[0]); };
 
                         try {
                             if (!printerInstance) {
@@ -896,12 +905,20 @@
                                     navigator.usb.requestDevice = originalRequest;
                                 },
                                 onFailed: (message) => {
-                                    console.warn("Auto-connect logic failed inside PrintHub:", message);
+                                    console.warn("Auto-connect logic failed inside PrintHub (USB):", message);
+                                    // Don't show scary error if it's just a permission/gesture issue during auto-recon
+                                    if (message.includes('SecurityError') || message.includes('Access Denied') || message.includes('Must be handling a user gesture')) {
+                                        console.log("Auto-connect blocked by browser security (User Gesture required).");
+                                        window.dispatchEvent(new CustomEvent('printer-gesture-required'));
+                                    } else {
+                                        // Still notify for other errors like device busy/disconnected
+                                        // window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Gagal Konek USB: ' + message } }));
+                                    }
                                     navigator.usb.requestDevice = originalRequest;
                                 }
                             });
                         } catch (err) {
-                            console.error("Error during auto-connect patch:", err);
+                            console.error("Error during auto-connect patch (USB):", err);
                             navigator.usb.requestDevice = originalRequest;
                         }
                     }
@@ -915,11 +932,11 @@
                 try {
                     const devices = await navigator.bluetooth.getDevices();
                     if (devices.length > 0) {
-                        console.log("Mencoba koneksi otomatis ke perangkat Bluetooth:", devices[0]);
+                        console.log("Bluetooth device found: " + (devices[0].name || "Unknown"));
 
                         // Monkey-patch requestDevice for Bluetooth
                         const originalRequest = navigator.bluetooth.requestDevice;
-                        navigator.bluetooth.requestDevice = () => Promise.resolve(devices[0]);
+                        navigator.bluetooth.requestDevice = function () { return Promise.resolve(devices[0]); };
 
                         try {
                             if (!printerInstance) {
@@ -937,6 +954,11 @@
                                 },
                                 onFailed: (message) => {
                                     console.warn("Auto-connect logic failed inside PrintHub (BT):", message);
+                                    if (message.includes('SecurityError') || message.includes('Access Denied') || message.includes('Must be handling a user gesture') || message.includes('no longer in range')) {
+                                        console.log("BT Auto-connect blocked by browser security (User Gesture required).");
+                                        // Dispatch a quiet event that the UI can use to show a "Click to connect" hint
+                                        window.dispatchEvent(new CustomEvent('printer-gesture-required'));
+                                    }
                                     navigator.bluetooth.requestDevice = originalRequest;
                                 }
                             });
@@ -1107,6 +1129,8 @@
                 amountPaid: 0,
                 change: 0,
 
+                printerGestureRequired: false,
+
                 init() {
                     this.$watch('cart', () => this.calculateTotals());
                     window.addEventListener('clear-alpine-cart', () => this.clearCart());
@@ -1119,6 +1143,10 @@
 
                     // Listen for Livewire updates to products if necessary (e.g. stock updates after checkout)
                     this.$watch('products', () => console.log('Products updated'));
+
+                    window.addEventListener('printer-gesture-required', () => {
+                        this.printerGestureRequired = true;
+                    });
                 },
 
                 handleShortcuts(e) {
