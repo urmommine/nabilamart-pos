@@ -66,6 +66,10 @@ class PosTerminal extends Component
     public string $profilePassword = '';
     public string $profilePasswordConfirmation = '';
 
+    // Payment Status & Notes
+    public string $paymentStatus = 'paid'; // 'paid', 'unpaid', 'debt'
+    public string $note = '';
+
     // Printer
     public string $printerType = 'usb';
 
@@ -398,6 +402,8 @@ class PosTerminal extends Component
         $this->amountPaid = '';
         $this->change = 0;
         $this->paymentMethod = 'cash';
+        $this->paymentStatus = 'paid';
+        $this->note = '';
         $this->showCheckoutModal = true;
     }
 
@@ -441,7 +447,23 @@ class PosTerminal extends Component
 
     public function calculateChange()
     {
+        if ($this->paymentStatus === 'unpaid') {
+            $this->amountPaid = 0;
+            $this->change = 0;
+            return;
+        }
         $this->change = max(0, (float) $this->amountPaid - $this->total);
+    }
+
+    public function updatedPaymentStatus()
+    {
+        if ($this->paymentStatus === 'unpaid') {
+            $this->amountPaid = 0;
+            $this->change = 0;
+        } elseif ($this->paymentStatus === 'paid') {
+            $this->amountPaid = $this->total;
+            $this->calculateChange();
+        }
     }
 
     public function openDiscountModal()
@@ -540,16 +562,37 @@ class PosTerminal extends Component
         $tempTotal = $afterDiscount + $tempTax;
         $tempChange = max(0, (float) $this->amountPaid - $tempTotal);
 
+        // Logic for Payment Status
+        if ($this->paymentStatus === 'unpaid') {
+            $this->amountPaid = 0;
+            $this->change = 0;
+        } elseif ($this->paymentStatus === 'debt') {
+            // Debt allows partial payment. 
+            // If amountPaid >= tempTotal, it should probably be 'paid', but user selected 'debt'. 
+            // We respect user choice but maybe ensure amountPaid < tempTotal? 
+            // For flexibility, we allow whatever.
+            $tempChange = max(0, (float) $this->amountPaid - $tempTotal);
+        } elseif ($this->paymentStatus === 'paid') {
+            // Enforce full payment
+            if ((float) $this->amountPaid < $tempTotal) {
+                // If paid less, switch to debt or error? Error is safer.
+                $this->dispatch('notify', type: 'error', message: 'Jumlah bayar kurang untuk status Lunas');
+                return;
+            }
+        }
+
         try {
             $orderData = [
                 'subtotal' => (float) $tempSubtotal,
                 'discount' => (float) $tempDiscount,
                 'tax' => (float) $tempTax,
                 'total_amount' => (float) $tempTotal,
-                'payment_method' => $this->paymentMethod,
+                'payment_method' => $this->paymentStatus === 'unpaid' ? 'cash' : $this->paymentMethod, // Default to cash if unpaid? or keep selected?
                 'amount_paid' => (float) $this->amountPaid,
                 'change' => (float) $tempChange,
                 'customer_id' => $this->selectedCustomerId,
+                'payment_status' => $this->paymentStatus,
+                'notes' => $this->note,
             ];
 
             $order = $orderService->createOrder($orderData, $this->cart);
@@ -565,14 +608,16 @@ class PosTerminal extends Component
             $this->dispatch('clear-alpine-cart');
             $this->dispatch('refresh-products', products: Product::active()->get(['id', 'category_id', 'name', 'selling_price', 'image', 'stock', 'unlimited_stock', 'barcode']));
 
-            // Trigger print
+            // Trigger print ONLY if PAID or DEBT (partial)
+            // If UNPAID, maybe print invoice but no receipt? 
+            // Let's print invoice anyway.
             if ($this->printerType === 'bluetooth' || $this->printerType === 'usb_web') {
                 $this->dispatch('printBluetoothReceipt', data: $this->getReceiptData($order));
             } else {
                 $this->dispatch('triggerDirectPrint', orderId: $order->id);
             }
 
-            $this->dispatch('notify', type: 'success', message: 'Transaksi berhasil! Invoice: ' . $order->invoice_number);
+            $this->dispatch('notify', type: 'success', message: 'Transaksi berhasil! Status: ' . ucfirst($order->payment_status));
 
         } catch (\Exception $e) {
             $this->dispatch('notify', type: 'error', message: $e->getMessage());
@@ -602,10 +647,11 @@ class PosTerminal extends Component
             'discount' => $order->discount,
             'tax' => $order->tax,
             'total' => $order->total_amount,
-            'payment_method' => ucfirst($order->payment_method),
+            'payment_method' => ucfirst($order->payment_method) . ' (' . ucfirst($order->payment_status) . ')',
             'amount_paid' => $order->amount_paid,
             'change' => $order->change,
             'footer' => StoreSetting::get(StoreSetting::RECEIPT_FOOTER, 'Terima Kasih'),
+            'note' => $order->notes,
         ];
     }
 }

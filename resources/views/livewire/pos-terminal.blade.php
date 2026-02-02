@@ -429,7 +429,7 @@
         .custom-modal {
             border-radius: 1rem;
             width: 100%;
-            max-width: 500px;
+            /* max-width: 500px; REMOVED to allow tailwind classes */
             overflow: hidden;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
         }
@@ -445,95 +445,191 @@
         }
     </style>
 
-    <!-- Checkout Modal (Alpine) -->
+    <!-- Checkout Modal (Reference Design) -->
     <div class="custom-modal-backdrop" x-show="showCheckoutModal" x-cloak @click.self="showCheckoutModal = false"
-        @keydown.window.escape="showCheckoutModal = false" @keydown.window.f1.prevent="setExactAmount()">
-        <div class="custom-modal" @click.stop>
-            <div class="p-5 border-b border-gray-200 bg-slate-50">
-                <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                    <x-heroicon-o-credit-card class="w-6 h-6 text-blue-400" />
-                    Pembayaran
-                </h3>
+        @keydown.window.escape="showCheckoutModal = false" 
+        @keydown.window.f1.prevent="setExactAmount()"
+        @keydown.window.enter="if(showCheckoutModal && !['TEXTAREA', 'BUTTON'].includes($event.target.tagName)) processPayment()">
+        <div class="custom-modal md:max-w-4xl w-full mx-4 rounded-3xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xl flex flex-col md:flex-row max-h-[90vh] md:h-[550px]"
+            @click.stop>
+
+            <!-- Left Panel: Order Summary -->
+            <div
+                class="w-full md:w-5/12 bg-slate-50 dark:bg-slate-800 p-6 flex flex-col justify-between border-r border-slate-100 dark:border-slate-700 relative overflow-hidden">
+                <!-- Decorative Circle -->
+                <div
+                    class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-white dark:bg-slate-700 rounded-full shadow-sm flex items-center justify-center mb-8">
+                    <span class="material-symbols-outlined text-6xl text-primary opacity-80">receipt_long</span>
+                </div>
+
+                <div class="relative z-10">
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Order Summary</p>
+                    <h2 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight"
+                        x-text="'Rp ' + formatNumber(total)"></h2>
+                    <p class="text-slate-400 text-xs mt-1">Invoice #INV-{{ now()->format('Ymd') }}-001</p>
+                </div>
+
+                <div class="relative z-10 text-center py-10">
+                    <p class="text-slate-400 text-xs text-center max-w-[200px] mx-auto leading-relaxed">
+                        Selesaikan pembayaran untuk memproses pesanan ini.
+                    </p>
+                </div>
+
+                <!-- Status Dropdown (User Requested) -->
+                <div
+                    class="relative z-10 bg-white dark:bg-slate-700 p-3 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-600">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase">Status Pembayaran</span>
+                        <span class="w-2 h-2 rounded-full" :class="{
+                                 'bg-green-500': paymentStatus === 'paid',
+                                 'bg-red-500': paymentStatus === 'unpaid',
+                                 'bg-orange-500': paymentStatus === 'debt'
+                             }"></span>
+                    </div>
+                    <select wire:model.live="paymentStatus"
+                        class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-xs font-bold text-slate-700 dark:text-gray-200 focus:ring-2 focus:ring-primary cursor-pointer py-2 pl-3 pr-8">
+                        <option value="paid">Lunas (Paid)</option>
+                        <option value="unpaid">Belum Bayar (Unpaid)</option>
+                        <option value="debt">Hutang (Debt)</option>
+                    </select>
+                </div>
             </div>
-            <div class="p-6 space-y-6">
-                <div class="text-center p-4 bg-primary/10 rounded-xl border border-primary/20">
-                    <p class="text-gray-600 font-bold text-sm mb-1">Total Tagihan</p>
-                    <p class="text-4xl font-bold text-slate-900" x-text="'Rp ' + formatNumber(total)"></p>
-                </div>
 
-                <div class="flex gap-3">
-                    <button class="flex-1 p-3 rounded-lg border-2 transition-all font-bold"
-                        :class="paymentMethod === 'cash' ? 'border-primary bg-primary/10 text-slate-900' : 'border-gray-300 bg-white text-gray-700 hover:border-slate-400'"
-                        @click="setPaymentMethod('cash')">
-                        Tunai
-                    </button>
-                    <button class="flex-1 p-3 rounded-lg border-2 transition-all font-bold"
-                        :class="paymentMethod === 'qris' ? 'border-primary bg-primary/10 text-slate-900' : 'border-gray-300 bg-white text-gray-700 hover:border-slate-400'"
-                        @click="setPaymentMethod('qris')">
-                        QRIS
-                    </button>
-                    <button class="flex-1 p-3 rounded-lg border-2 transition-all font-bold"
-                        :class="paymentMethod === 'transfer' ? 'border-primary bg-primary/10 text-slate-900' : 'border-gray-300 bg-white text-gray-700 hover:border-slate-400'"
-                        @click="setPaymentMethod('transfer')">
-                        Transfer
+            <!-- Right Panel: Payment Details -->
+            <div class="w-full md:w-7/12 bg-white dark:bg-slate-900 p-6 flex flex-col overflow-y-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Payment Details</h3>
+                        <p class="text-slate-500 text-xs">Lengkapi detail transaksi di bawah ini.</p>
+                    </div>
+                    <button @click="showCheckoutModal = false"
+                        class="text-slate-400 hover:text-red-500 transition-colors">
+                        <span class="material-symbols-outlined text-xl">close</span>
                     </button>
                 </div>
 
-                <template x-if="paymentMethod === 'cash'">
-                    <div class="space-y-4">
-                        <div class="space-y-2">
-                            <label class="text-gray-600 text-xs uppercase font-bold tracking-wider">
-                                Uang Diterima
-                            </label>
-                            <input type="number" x-model="amountPaid" @input="calculateChange()"
-                                class="w-full bg-white border border-gray-300 rounded-lg p-3 text-slate-900 text-xl font-bold focus:ring-2 focus:ring-primary focus:border-transparent"
-                                placeholder="0" @keydown.enter="processPayment()"
-                                x-init="$watch('showCheckoutModal', value => value && paymentMethod === 'cash' && $nextTick(() => $el.focus()))">
-                        </div>
-
-                        <div class="grid grid-cols-3 gap-2">
-                            <button
-                                class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors"
-                                @click="setQuickAmount(50000)">50k</button>
-                            <button
-                                class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors"
-                                @click="setQuickAmount(100000)">100k</button>
-                            <button
-                                class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors"
-                                @click="setQuickAmount(20000)">20k</button>
-                            <button
-                                class="bg-slate-200 text-black font-bold py-2 rounded text-sm hover:bg-slate-300 transition-colors col-span-3"
-                                @click="setExactAmount()">
-                                Uang Pas (F1)
-                            </button>
-                        </div>
-
-                        <template x-if="amountPaid >= total">
-                            <div
-                                class="flex justify-between items-center bg-green-100 p-3 rounded-lg border border-green-300">
-                                <span class="text-green-700 font-bold">Kembalian</span>
-                                <span class="text-slate-900 text-xl font-bold"
-                                    x-text="'Rp ' + formatNumber(change)"></span>
-                            </div>
-                        </template>
+                <!-- Payment Status: Unpaid Blocking View -->
+                <template x-if="paymentStatus === 'unpaid'">
+                    <div
+                        class="flex-1 flex flex-col items-center justify-center text-center space-y-4 opacity-70 p-10 border-2 border-dashed border-slate-200 rounded-3xl">
+                        <span class="material-symbols-outlined text-5xl text-slate-400">money_off</span>
+                        <p class="text-slate-500 font-medium">Status 'Belum Bayar' dipilih. <br>Tidak ada pembayaran
+                            yang perlu diproses.</p>
                     </div>
                 </template>
+
+                <template x-if="paymentStatus !== 'unpaid'">
+                    <div class="flex-1 space-y-4">
+                        <!-- Amount Input -->
+                        <div x-show="paymentMethod === 'cash'">
+                            <label class="block text-xs font-bold text-slate-700 dark:text-gray-300 mb-1">Payment
+                                Amount</label>
+                            <div class="relative">
+                                <span
+                                    class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
+                                <input type="number" x-model="amountPaid" @input="calculateChange()"
+                                    class="w-full pl-12 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-lg font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm placeholder-slate-300"
+                                    placeholder="0" x-ref="paymentInput"
+                                    @keydown.enter="processPayment()"
+                                    x-init="$watch('showCheckoutModal', value => { if (value && paymentMethod === 'cash') setTimeout(() => $el.focus(), 100) });
+                                            $watch('paymentMethod', value => { if (value === 'cash' && showCheckoutModal) setTimeout(() => $el.focus(), 100) })">
+                            </div>
+                            <!-- Quick Amounts -->
+                            <div class="flex gap-2 mt-2 overflow-x-auto pb-1 no-scrollbar">
+                                <button
+                                    class="px-3 py-1.5 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-600 hover:bg-slate-200"
+                                    @click="setQuickAmount(20000)">20k</button>
+                                <button
+                                    class="px-3 py-1.5 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-600 hover:bg-slate-200"
+                                    @click="setQuickAmount(50000)">50k</button>
+                                <button
+                                    class="px-3 py-1.5 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-600 hover:bg-slate-200"
+                                    @click="setQuickAmount(100000)">100k</button>
+                                <button
+                                    class="px-3 py-1.5 bg-primary/10 rounded-lg text-[10px] font-bold text-primary hover:bg-primary/20"
+                                    @click="setExactAmount()">Uang Pas (F1)</button>
+                            </div>
+
+                            <!-- Kembalian Display -->
+                            <template x-if="change > 0 || amountPaid >= total">
+                                <div
+                                    class="mt-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800 flex justify-between items-center animate-in fade-in slide-in-from-top-2">
+                                    <span
+                                        class="text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-2 text-xs">
+                                        <span class="material-symbols-outlined text-lg">payments</span>
+                                        Kembalian
+                                    </span>
+                                    <span class="text-lg font-black text-emerald-600 dark:text-emerald-400"
+                                        x-text="'Rp ' + formatNumber(change)"></span>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Payment Method -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-gray-300 mb-2">Payment
+                                Method</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button
+                                    class="relative p-2 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 h-20"
+                                    :class="paymentMethod === 'cash' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-100 hover:border-slate-300 text-slate-500'"
+                                    @click="setPaymentMethod('cash')">
+                                    <span class="material-symbols-outlined text-xl">payments</span>
+                                    <span class="font-bold text-xs">Cash</span>
+                                    <div x-show="paymentMethod === 'cash'"
+                                        class="absolute top-1 right-1 bg-primary text-white rounded-full p-0.5">
+                                        <span class="material-symbols-outlined text-[8px] block">check</span>
+                                    </div>
+                                </button>
+                                <button
+                                    class="relative p-2 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 h-20"
+                                    :class="paymentMethod === 'qris' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-100 hover:border-slate-300 text-slate-500'"
+                                    @click="setPaymentMethod('qris')">
+                                    <span class="material-symbols-outlined text-xl">qr_code_scanner</span>
+                                    <span class="font-bold text-xs">QRIS</span>
+                                    <div x-show="paymentMethod === 'qris'"
+                                        class="absolute top-1 right-1 bg-primary text-white rounded-full p-0.5">
+                                        <span class="material-symbols-outlined text-[8px] block">check</span>
+                                    </div>
+                                </button>
+                                <button
+                                    class="relative p-2 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 h-20"
+                                    :class="paymentMethod === 'transfer' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-100 hover:border-slate-300 text-slate-500'"
+                                    @click="setPaymentMethod('transfer')">
+                                    <span class="material-symbols-outlined text-xl">account_balance</span>
+                                    <span class="font-bold text-xs">Transfer</span>
+                                    <div x-show="paymentMethod === 'transfer'"
+                                        class="absolute top-1 right-1 bg-primary text-white rounded-full p-0.5">
+                                        <span class="material-symbols-outlined text-[8px] block">check</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div>
+                            <label
+                                class="block text-xs font-bold text-slate-700 dark:text-gray-300 mb-1">Description</label>
+                            <textarea wire:model="note"
+                                class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-slate-700 text-xs focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm placeholder-slate-300 resize-none h-16"
+                                placeholder="Add notes..."></textarea>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Footer Button -->
+                <div class="mt-auto pt-4">
+                    <button
+                        class="w-full py-3 rounded-xl font-bold text-base shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+                        :class="(paymentStatus === 'paid' && paymentMethod === 'cash' && amountPaid < total) ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700 shadow-red-600/30'"
+                        :disabled="(paymentStatus === 'paid' && paymentMethod === 'cash' && amountPaid < total)"
+                        @click="processPayment()">
+                        <span>Proceed Payment</span>
+                        <span class="material-symbols-outlined text-xl">arrow_forward</span>
+                    </button>
+                </div>
             </div>
-            <div class="p-5 border-t border-gray-200 flex gap-3 bg-slate-50">
-                <button
-                    class="flex-1 py-3 px-4 rounded-xl border border-gray-300 text-slate-700 hover:bg-slate-100 transition-colors font-bold"
-                    @click="showCheckoutModal = false">
-                    Batal
-                </button>
-                <button
-                    class="flex-[2] py-3 px-4 rounded-xl bg-primary text-white hover:bg-red-600 transition-colors font-bold shadow-lg shadow-primary/20"
-                    :disabled="paymentMethod === 'cash' && amountPaid < total"
-                    :class="paymentMethod === 'cash' && amountPaid < total ? 'opacity-50 cursor-not-allowed' : ''"
-                    @click="processPayment()">
-                    Proses Pembayaran (Enter)
-                </button>
-            </div>
-        </div>
+        </div>  
     </div>
 
     <!-- Global Discount Modal (Alpine) -->
@@ -1010,6 +1106,7 @@
 
                 showCheckoutModal: false,
                 paymentMethod: 'cash',
+                paymentStatus: @entangle('paymentStatus'),
                 amountPaid: 0,
                 change: 0,
 
@@ -1174,6 +1271,7 @@
                     this.amountPaid = 0;
                     this.change = 0;
                     this.paymentMethod = 'cash';
+                    this.paymentStatus = 'paid';
                     this.showCheckoutModal = true;
                 },
 
@@ -1197,7 +1295,7 @@
                 },
 
                 processPayment() {
-                    if (this.paymentMethod === 'cash' && this.amountPaid < this.total) {
+                    if (this.paymentStatus === 'paid' && this.paymentMethod === 'cash' && this.amountPaid < this.total) {
                         this.notify('error', 'Pembayaran kurang');
                         return;
                     }

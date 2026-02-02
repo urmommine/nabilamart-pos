@@ -1,0 +1,14 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [Unreleased] - 2026-02-02
+
+### Added
+- **Database**: Added `unpaid` and `debt` options to the `payment_status` enum in the `orders` table (Migration: `2026_02_02_000001_modify_payment_status_in_orders_table.php`).
+- **OrderResource**: Enabled `EditOrder` page functionality, allowing modifications to existing orders.
+
+### Modified
+- **PosTerminal**: Updated logic for payment status validation and processing.
+- **OrderService**: Refined order service logic to support new payment statuses.
+- **Views**: Updated `pos-terminal.blade.php` to reflect backend changes.

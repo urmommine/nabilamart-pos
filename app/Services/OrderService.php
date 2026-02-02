@@ -35,7 +35,7 @@ class OrderService
                     'payment_method' => $data['payment_method'],
                     'amount_paid' => $data['amount_paid'],
                     'change' => $data['change'],
-                    'payment_status' => 'paid',
+                    'payment_status' => $data['payment_status'] ?? 'paid',
                     'customer_id' => $data['customer_id'] ?? null,
                     'notes' => $data['notes'] ?? null,
                 ]);

@@ -46,12 +46,25 @@ class OrderResource extends Resource
                             ->label('Total')
                             ->prefix('Rp')
                             ->disabled(),
-                        Forms\Components\TextInput::make('payment_method')
+                        Forms\Components\Select::make('payment_method')
                             ->label('Metode Bayar')
-                            ->disabled(),
-                        Forms\Components\TextInput::make('payment_status')
+                            ->options([
+                                'cash' => 'Tunai',
+                                'qris' => 'QRIS',
+                                'transfer' => 'Transfer',
+                            ])
+                            ->required(),
+                        Forms\Components\Select::make('payment_status')
                             ->label('Status')
-                            ->disabled(),
+                            ->options([
+                                'paid' => 'Lunas',
+                                'pending' => 'Pending',
+                                'cancelled' => 'Dibatalkan',
+                            ])
+                            ->required(),
+                        Forms\Components\Textarea::make('notes')
+                            ->label('Catatan')
+                            ->columnSpanFull(),
                     ])->columns(2),
             ]);
     }
@@ -129,7 +142,8 @@ class OrderResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
-                    ->slideOver(),
+                ->slideOver(),
+                Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('print')
                     ->label('Cetak Invoice')
                     ->icon('heroicon-o-printer')
@@ -303,16 +317,16 @@ class OrderResource extends Resource
                                 ->weight('bold'),
                             Infolists\Components\TextEntry::make('quantity')
                                 ->label('Jumlah'),
-                                //->alignCenter(),
+                            //->alignCenter(),
                             Infolists\Components\TextEntry::make('unit_price')
                                 ->label('Harga Satuan')
                                 ->money('IDR'),
-                               // ->alignEnd(),
+                            // ->alignEnd(),
                             Infolists\Components\TextEntry::make('total_price')
                                 ->label('Total Harga')
                                 ->money('IDR')
                                 ->weight('bold'),
-                               // ->alignEnd(),
+                            // ->alignEnd(),
                         ])->columns(4)
                         ->grid(1),
                 ]),
@@ -330,6 +344,7 @@ class OrderResource extends Resource
     {
         return [
             'index' => Pages\ListOrders::route('/'),
+            'edit' => Pages\EditOrder::route('/{record}/edit'),
         ];
     }
 
