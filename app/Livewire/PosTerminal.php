@@ -589,14 +589,17 @@ class PosTerminal extends Component
 
             $product = $dbProducts[$pid];
 
-            // Manual Discount Security Check:
-            // If we want to allow manual discounts, we should probably validate them or 
-            // implementation them securely. For now, we will RESET to original price.
-            // If you need manual discounts, pass them separately and validate authorization.
-            // *Assuming for this fix we revert to strict DB prices to prevent tampering*
-            // Or if we want to support manual discount, we must trust the `manual_discount` flag 
-            // but carefully. Ideally manual discount should require server-side toggle.
-            // Let's assume for high-security, we stick to DB prices + Logic Discounts.
+            // Handle Manual Discounts
+            $price = (float) $product->selling_price;
+            $discountInfo = null;
+            $manualDiscount = false;
+
+            // Allow manual discounts from frontend if present
+            if (isset($item['manual_discount']) && $item['manual_discount']) {
+                $price = (float) $item['price'];
+                $discountInfo = $item['discount_info'] ?? null;
+                $manualDiscount = true;
+            }
 
             // Reconstruct Item
             $safeItem = [
@@ -606,15 +609,14 @@ class PosTerminal extends Component
                 'stock' => $product->stock,
                 'unlimited_stock' => $product->unlimited_stock,
 
-                // Crucial: Use DB Price
                 'original_price' => (float) $product->selling_price,
-                'price' => (float) $product->selling_price,
+                'price' => $price,
 
                 'quantity' => $qty,
-                'total' => (float) $product->selling_price * $qty,
+                'total' => $price * $qty,
 
-                'discount_info' => null,
-                'manual_discount' => false, // Reset manual for security (or implement secure manual logic)
+                'discount_info' => $discountInfo,
+                'manual_discount' => $manualDiscount,
             ];
 
             // Stock Check (Early UX check)
