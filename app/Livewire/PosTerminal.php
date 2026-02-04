@@ -558,6 +558,12 @@ class PosTerminal extends Component
             return;
         }
 
+        // UX Safety: If user typed a name but didn't select from dropdown
+        if (!$this->selectedCustomerId && !empty($this->customerSearch)) {
+            $this->dispatch('notify', type: 'error', message: 'Silakan klik nama pelanggan dari daftar pencarian untuk memilihnya.');
+            return;
+        }
+
         if (empty($frontendCart)) {
             $this->dispatch('notify', type: 'error', message: 'Keranjang kosong (Server)');
             return;

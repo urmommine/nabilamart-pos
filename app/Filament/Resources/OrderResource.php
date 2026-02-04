@@ -85,6 +85,11 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Kasir')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('customer.name')
+                    ->label('Pelanggan')
+                    ->sortable()
+                    ->searchable()
+                    ->placeholder('Walk-in Customer'),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total')
                     ->money('IDR')
@@ -233,7 +238,6 @@ class OrderResource extends Resource
                                     ->icon('heroicon-m-user'),
                                 Infolists\Components\TextEntry::make('customer.name')
                                     ->label('Pelanggan')
-                                    ->placeholder('Walk-in Customer')
                                     ->icon('heroicon-m-user-group'),
                                 Infolists\Components\TextEntry::make('created_at')
                                     ->label('Waktu Transaksi')
