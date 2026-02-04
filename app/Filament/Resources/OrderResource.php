@@ -13,6 +13,7 @@ use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Table;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
+use Illuminate\Support\HtmlString; // Pastikan import ini ada di bagian atas file
 
 class OrderResource extends Resource
 {
@@ -45,7 +46,7 @@ class OrderResource extends Resource
                         Forms\Components\TextInput::make('total_amount')
                             ->label('Total')
                             ->prefix('Rp')
-                            ->disabled(),
+                            ,
                         Forms\Components\Select::make('payment_method')
                             ->label('Metode Bayar')
                             ->options([
@@ -60,7 +61,10 @@ class OrderResource extends Resource
                                 'paid' => 'Lunas',
                                 'pending' => 'Pending',
                                 'cancelled' => 'Dibatalkan',
+'unpaid' => 'Belum Bayar',
+        'debt' => 'Hutang',
                             ])
+			    ->native(false)
                             ->required(),
                         Forms\Components\Textarea::make('notes')
                             ->label('Catatan')
@@ -101,20 +105,25 @@ class OrderResource extends Resource
                         default => $state,
                     }),
                 Tables\Columns\TextColumn::make('payment_status')
-                    ->label('Status')
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'paid' => 'success',
-                        'pending' => 'warning',
-                        'cancelled' => 'danger',
-                        default => 'gray',
-                    })
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'paid' => 'Lunas',
-                        'pending' => 'Pending',
-                        'cancelled' => 'Dibatalkan',
-                        default => $state,
-                    }),
+    ->label('Status')
+    ->badge()
+    ->sortable()    
+    ->color(fn(string $state): string => match ($state) {
+        'paid' => 'success',
+        'pending' => 'warning',
+        'cancelled' => 'danger',
+        'unpaid' => 'gray',   // Biasanya abu-abu karena belum ada aksi
+        'debt' => 'danger',   // Atau 'warning' jika ingin warna oranye
+        default => 'gray',
+    })
+    ->formatStateUsing(fn(string $state): string => match ($state) {
+        'paid' => 'Lunas',
+        'pending' => 'Pending',
+        'cancelled' => 'Dibatalkan',
+        'unpaid' => 'Belum Bayar',
+        'debt' => 'Hutang',
+        default => ucfirst($state), // Mengubah huruf pertama jadi kapital jika tidak ada match
+    }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tanggal')
                     ->dateTime('d M Y H:i')
@@ -135,6 +144,8 @@ class OrderResource extends Resource
                         'paid' => 'Lunas',
                         'pending' => 'Pending',
                         'cancelled' => 'Dibatalkan',
+'unpaid' => 'Belum Bayar',
+        'debt' => 'Hutang',
                     ]),
                 Tables\Filters\Filter::make('today')
                     ->label('Hari Ini')
@@ -237,17 +248,21 @@ class OrderResource extends Resource
                                     ->label('Status Pembayaran')
                                     ->badge()
                                     ->color(fn(string $state): string => match ($state) {
-                                        'paid' => 'success',
-                                        'pending' => 'warning',
-                                        'cancelled' => 'danger',
-                                        default => 'gray',
-                                    })
-                                    ->formatStateUsing(fn(string $state): string => match ($state) {
-                                        'paid' => 'Lunas',
-                                        'pending' => 'Pending',
-                                        'cancelled' => 'Dibatalkan',
-                                        default => $state,
-                                    }),
+                'paid' => 'success',
+                'pending' => 'warning',
+                'cancelled' => 'danger',
+                'unpaid' => 'gray',
+                'debt' => 'danger',
+                default => 'gray',
+            })
+            ->formatStateUsing(fn(string $state): string => match ($state) {
+                'paid' => 'Lunas',
+                'pending' => 'Pending',
+                'cancelled' => 'Dibatalkan',
+                'unpaid' => 'Belum Bayar',
+                'debt' => 'Hutang',
+                default => ucfirst($state),
+            }),
                                 Infolists\Components\TextEntry::make('payment_method')
                                     ->label('Metode Pembayaran')
                                     ->badge()
@@ -281,14 +296,23 @@ class OrderResource extends Resource
                                     ->label('Pajak')
                                     ->money('IDR'),
                                 Infolists\Components\TextEntry::make('total_amount')
-                                    ->label('Total Akhir')
-                                    ->money('IDR')
-                                    ->weight('black')
-                                    ->size('lg')
-                                    ->color('success'),
-                                Infolists\Components\TextEntry::make('amount_paid')
-                                    ->label('Jumlah Bayar')
-                                    ->money('IDR'),
+    ->label('Total Akhir')
+    ->money('IDR', locale: 'id')
+    ->weight('black')
+    ->size('lg')
+    ->color(fn ($record): string => $record->amount_paid < $record->total_amount ? 'danger' : 'success'),
+
+Infolists\Components\TextEntry::make('amount_paid')
+    ->label('Jumlah Bayar')
+    ->money('IDR', locale: 'id')
+    ->weight('bold')
+    ->color(fn ($record): string => $record->amount_paid < $record->total_amount ? 'danger' : 'success')
+    // Opsional: Menambahkan info sisa kurangnya jika belum lunas
+    ->helperText(fn ($record): HtmlString => 
+        $record->amount_paid < $record->total_amount 
+            ? new HtmlString('<span class="text-danger-600 font-bold dark:text-danger-400">Kurang: Rp ' . number_format($record->total_amount - $record->amount_paid, 0, ',', '.') . '</span>')
+            : new HtmlString('<span class="text-success-600 font-bold dark:text-success-400">✔ Pembayaran Lunas</span>')
+    ),
                                 Infolists\Components\TextEntry::make('change')
                                     ->label('Kembalian')
                                     ->money('IDR')

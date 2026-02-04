@@ -137,6 +137,11 @@
                                 </button>
                             @endif
                         </div>
+                        <button wire:click="openNewCustomerModal"
+                            class="p-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-colors border border-primary/20"
+                            title="Tambah Pelanggan Baru">
+                            <span class="material-symbols-outlined">add</span>
+                        </button>
 
                         @if(!empty($customers) && !$selectedCustomerId)
                             <div
@@ -531,7 +536,7 @@
                                     class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
                                 <input type="number" x-model="amountPaid" @input="calculateChange()"
                                     class="w-full pl-12 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-lg font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm placeholder-slate-300"
-                                    placeholder="0" x-ref="paymentInput" @keydown.enter="processPayment()"
+                                    placeholder="" min="0" x-ref="paymentInput" @keydown.enter="processPayment()"
                                     x-init="$watch('showCheckoutModal', value => { if (value && paymentMethod === 'cash') setTimeout(() => $el.focus(), 100) });
                                             $watch('paymentMethod', value => { if (value === 'cash' && showCheckoutModal) setTimeout(() => $el.focus(), 100) })">
                             </div>
@@ -624,9 +629,11 @@
                         class="w-full py-3 rounded-xl font-bold text-base shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2"
                         :class="(paymentStatus === 'paid' && paymentMethod === 'cash' && amountPaid < total) ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700 shadow-red-600/30'"
                         :disabled="(paymentStatus === 'paid' && paymentMethod === 'cash' && amountPaid < total)"
+                        wire:loading.attr="disabled" wire:loading.class="opacity-50 cursor-wait"
                         @click="processPayment()">
-                        <span>Proses Pembayaran (ENTER)</span>
-                        <span class="material-symbols-outlined text-xl">arrow_forward</span>
+                        <span wire:loading.remove>Proses Pembayaran (ENTER)</span>
+                        <span wire:loading>Memproses...</span>
+                        <span wire:loading.remove class="material-symbols-outlined text-xl">arrow_forward</span>
                     </button>
                 </div>
             </div>
@@ -779,6 +786,59 @@
                     <button
                         class="flex-1 py-3 px-4 rounded-xl bg-primary text-white hover:bg-red-600 transition-colors font-bold"
                         wire:click="updateProfile">Simpan</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- New Customer Modal -->
+    @if($showNewCustomerModal)
+        <div class="custom-modal-backdrop" wire:click.self="closeModal">
+            <div class="custom-modal md:max-w-md w-full mx-4 bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden"
+                wire:click.stop>
+                <div class="p-5 border-b border-gray-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-800">
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">person_add</span>
+                        Tambah Pelanggan Baru
+                    </h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-1">Nama Lengkap*</label>
+                        <input type="text" wire:model="newCustomerName" placeholder="Nama Pelanggan"
+                            class="w-full rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm focus:border-primary focus:ring-primary">
+                        @error('newCustomerName') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-1">Nomor Telepon*</label>
+                        <input type="text" wire:model="newCustomerPhone" placeholder="08..."
+                            class="w-full rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm focus:border-primary focus:ring-primary">
+                        @error('newCustomerPhone') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-1">Email
+                            (Opsional)</label>
+                        <input type="email" wire:model="newCustomerEmail" placeholder="email@contoh.com"
+                            class="w-full rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm focus:border-primary focus:ring-primary">
+                        @error('newCustomerEmail') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-1">Alamat
+                            (Opsional)</label>
+                        <textarea wire:model="newCustomerAddress" rows="2" placeholder="Alamat lengkap"
+                            class="w-full rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm focus:border-primary focus:ring-primary resize-none"></textarea>
+                    </div>
+                </div>
+                <div
+                    class="p-5 border-t border-gray-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-800 flex justify-end gap-3">
+                    <button wire:click="closeModal"
+                        class="px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 rounded-xl text-slate-700 dark:text-gray-200 font-bold hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors">
+                        Batal
+                    </button>
+                    <button wire:click="createCustomer"
+                        class="px-4 py-2 bg-primary text-white rounded-xl font-bold hover:bg-red-600 transition-colors shadow-lg shadow-primary/30">
+                        Simpan Pelanggan
+                    </button>
                 </div>
             </div>
         </div>
@@ -1120,13 +1180,13 @@
                 itemDiscountValue: 0,
 
                 showGlobalDiscountModal: false,
-                globalDiscountType: 0, // 0: Nominal, 1: Percent
-                globalDiscountValue: 0,
+                globalDiscountType: @entangle('discountType'), // 0: Nominal, 1: Percent
+                globalDiscountValue: @entangle('discountValue'),
 
                 showCheckoutModal: false,
                 paymentMethod: 'cash',
                 paymentStatus: @entangle('paymentStatus'),
-                amountPaid: 0,
+                amountPaid: '',
                 change: 0,
 
                 printerGestureRequired: false,
@@ -1273,7 +1333,11 @@
 
                 clearCart() {
                     this.cart = [];
-                    this.notify('info', 'Keranjang dikosongkan');
+                    this.globalDiscountValue = 0;
+                    this.globalDiscountType = 0;
+                    this.calculateTotals();
+                    @this.call('clearCart');
+                    //this.notify('info', 'Keranjang dikosongkan');
                 },
 
                 addToCartByBarcode(barcode) {
@@ -1293,7 +1357,7 @@
                         this.notify('warning', 'Keranjang masih kosong');
                         return;
                     }
-                    this.amountPaid = 0;
+                    this.amountPaid = '';
                     this.change = 0;
                     this.paymentMethod = 'cash';
                     this.paymentStatus = 'paid';
@@ -1325,16 +1389,18 @@
                         return;
                     }
 
-                    // Pre-sync state to Livewire
-                    @this.set('cart', this.cart);
-                    @this.set('discountValue', this.globalDiscountValue);
-                    @this.set('discountType', this.globalDiscountType);
-                    @this.set('tax', this.tax);
-                    @this.set('amountPaid', this.amountPaid);
-                    @this.set('paymentMethod', this.paymentMethod);
+                    const paymentData = {
+                        discountValue: this.globalDiscountValue,
+                        discountType: this.globalDiscountType,
+                        tax: this.tax,
+                        paymentMethod: this.paymentMethod,
+                        amountPaid: this.amountPaid,
+                        paymentStatus: this.paymentStatus,
+                        note: this.note
+                    };
 
-                    // Trigger the existing Livewire processPayment method
-                    @this.call('processPayment');
+                    // Trigger the Livewire processPayment method with explicit data to avoid race conditions
+                    @this.call('processPayment', this.cart, paymentData);
 
                     this.showCheckoutModal = false;
                 },
@@ -1408,18 +1474,30 @@
                 calculateTotals() {
                     this.subtotal = this.cart.reduce((sum, item) => sum + item.total, 0);
 
+                    // If cart is empty, reset discount state
+                    if (this.subtotal === 0) {
+                        this.globalDiscountValue = 0;
+                        this.globalDiscountType = 0;
+                        this.discount = 0;
+                    }
+
                     // Simple global discount calculation
-                    this.discount = 0;
-                    const val = parseFloat(this.globalDiscountValue) || 0;
-                    if (val > 0) {
-                        if (this.globalDiscountType == 1) { // Percent
-                            this.discount = this.subtotal * (val / 100);
-                        } else { // Nominal
-                            this.discount = val;
+                    if (this.subtotal > 0) {
+                        this.discount = 0;
+                        const val = parseFloat(this.globalDiscountValue) || 0;
+                        if (val > 0) {
+                            if (this.globalDiscountType == 1) { // Percent
+                                this.discount = this.subtotal * (val / 100);
+                            } else { // Nominal
+                                this.discount = Math.min(this.subtotal, val);
+                            }
                         }
                     }
 
-                    this.total = Math.max(0, this.subtotal - this.discount);
+                    // Calculate total with tax (In sync with Livewire logic)
+                    const afterDiscount = Math.max(0, this.subtotal - this.discount);
+                    const taxAmount = (this.tax > 0) ? (afterDiscount * (this.tax / 100)) : 0;
+                    this.total = afterDiscount + taxAmount;
                 },
 
                 formatNumber(num) {

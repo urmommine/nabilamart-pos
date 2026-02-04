@@ -23,10 +23,7 @@ use App\Services\OrderService;
 #[Layout('layouts.pos')]
 class PosTerminal extends Component
 {
-    // Search and filter
-    public string $search = '';
-    public ?int $selectedCategory = null;
-    public int $perPage = 30;
+    // Search and filter properties removed (Handled by AlpineJS)
 
     // Customer
     public ?int $selectedCustomerId = null;
@@ -73,12 +70,51 @@ class PosTerminal extends Component
     // Printer
     public string $printerType = 'usb';
 
+    // New Customer Modal
+    public bool $showNewCustomerModal = false;
+    public string $newCustomerName = '';
+    public string $newCustomerPhone = '';
+    public string $newCustomerEmail = '';
+    public string $newCustomerAddress = '';
+
     public function mount()
     {
-        // Load tax percentage from settings
+        // ... existing mount code ...
         $this->defaultTax = (float) StoreSetting::get(StoreSetting::TAX_PERCENTAGE, 0);
         $this->tax = $this->defaultTax;
         $this->printerType = StoreSetting::get(StoreSetting::PRINTER_TYPE, 'usb');
+    }
+
+    public function openNewCustomerModal()
+    {
+        $this->reset(['newCustomerName', 'newCustomerPhone', 'newCustomerEmail', 'newCustomerAddress']);
+        $this->showNewCustomerModal = true;
+    }
+
+    public function createCustomer()
+    {
+        $this->validate([
+            'newCustomerName' => 'required|string|max:255',
+            'newCustomerPhone' => 'required|string|max:20',
+            'newCustomerEmail' => 'nullable|email|max:255',
+            'newCustomerAddress' => 'nullable|string',
+        ]);
+
+        try {
+            $customer = Customer::create([
+                'name' => $this->newCustomerName,
+                'phone' => $this->newCustomerPhone,
+                'email' => $this->newCustomerEmail,
+                'address' => $this->newCustomerAddress,
+            ]);
+
+            $this->selectCustomer($customer->id);
+            $this->showNewCustomerModal = false;
+            $this->dispatch('notify', type: 'success', message: 'Pelanggan baru berhasil dibuat');
+
+        } catch (\Exception $e) {
+            $this->dispatch('notify', type: 'error', message: 'Gagal membuat pelanggan: ' . $e->getMessage());
+        }
     }
 
     #[Computed]
@@ -91,6 +127,7 @@ class PosTerminal extends Component
 
     public function openProfileModal()
     {
+        // ... existing openProfileModal code ...
         $user = Auth::user();
         $this->profileName = $user->name;
         $this->profileEmail = $user->email;
@@ -101,6 +138,7 @@ class PosTerminal extends Component
 
     public function updateProfile()
     {
+        // ... existing updateProfile code ...
         $this->validate([
             'profileName' => 'required|string|max:255',
             'profileEmail' => 'required|email|max:255|unique:users,email,' . Auth::id(),
@@ -123,17 +161,13 @@ class PosTerminal extends Component
 
     public function render()
     {
-        $products = Product::query()
-            ->active()
-            ->when($this->search, fn($q) => $q->search($this->search))
-            ->when($this->selectedCategory, fn($q) => $q->where('category_id', $this->selectedCategory))
-            ->orderBy('name')
-            ->take($this->perPage)
-            ->get();
+        // Optimization: We no longer query $products here.
+        // The frontend fully relies on 'productsJson' for Client-Side search & filtering.
+        // This saves a redundant SQL query on every re-render.
 
         return view('livewire.pos-terminal', [
             'categories' => $this->categories,
-            'products' => $products,
+            'products' => [], // Empty array as placeholder (Blade loop uses Alpine template)
             'productsJson' => Product::active()->get(['id', 'category_id', 'name', 'selling_price', 'image', 'stock', 'unlimited_stock', 'barcode']),
             'categoriesJson' => $this->categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name]),
             'storeName' => StoreSetting::get(StoreSetting::STORE_NAME, 'POS Store'),
@@ -141,50 +175,7 @@ class PosTerminal extends Component
         ]);
     }
 
-    public function selectCategory(?int $categoryId)
-    {
-        $this->selectedCategory = $categoryId === $this->selectedCategory ? null : $categoryId;
-        $this->perPage = 30; // Reset pagination
-    }
-
-    public function updatedSearch()
-    {
-        $this->perPage = 30; // Reset pagination
-    }
-
-    public function handleBarcodeScan($barcode = null)
-    {
-        // Use passed barcode or fallback to search property
-        $code = $barcode ?? $this->search;
-
-        if (empty($code)) {
-            return;
-        }
-
-        $product = Product::query()
-            ->active()
-            ->where('barcode', $code)
-            ->first();
-
-        if ($product) {
-            $this->addToCart($product->id);
-            $this->search = '';
-            $this->selectedCategory = null;
-            $this->perPage = 30;
-            $this->dispatch('clear-search');
-        } else {
-            $this->dispatch('notify', type: 'error', message: 'Produk tidak ditemukan: ' . $code);
-            $this->search = '';
-            $this->selectedCategory = null;
-            $this->perPage = 30;
-            $this->dispatch('clear-search');
-        }
-    }
-
-    public function loadMore()
-    {
-        $this->perPage += 30;
-    }
+    // Unused methods removed: selectCategory, updatedSearch, handleBarcodeScan, loadMore
 
     public function addToCart(int $productId)
     {
@@ -306,17 +297,7 @@ class PosTerminal extends Component
         }
     }
 
-    #[On('barcodeScanned')]
-    public function handleBarcode(string $barcode)
-    {
-        $product = Product::where('barcode', $barcode)->first();
-
-        if ($product) {
-            $this->addToCart($product->id);
-        } else {
-            $this->dispatch('notify', type: 'error', message: 'Produk dengan barcode ' . $barcode . ' tidak ditemukan');
-        }
-    }
+    // handleBarcode listener removed (handled by AlpineJS addToCartByBarcode)
 
     public function incrementQuantity(int $index)
     {
@@ -363,6 +344,7 @@ class PosTerminal extends Component
     {
         $this->cart = [];
         $this->discount = 0;
+        $this->discountType = 0;
         $this->discountValue = '';
         $this->calculateTotals();
         $this->dispatch('notify', type: 'info', message: 'Keranjang dikosongkan');
@@ -372,16 +354,26 @@ class PosTerminal extends Component
     {
         $this->subtotal = array_sum(array_column($this->cart, 'total'));
 
+        // If cart is empty, reset discount
+        if (empty($this->cart)) {
+            $this->discountValue = '';
+            $this->discount = 0;
+            $this->discountType = 0;
+        }
+
         // Calculate discount
-        if ($this->discountType == 1 && (float) $this->discountValue > 0) {
-            // Percentage discount
-            $this->discount = $this->subtotal * ((float) $this->discountValue / 100);
-        } else {
-            $this->discount = (float) $this->discountValue;
+        if ($this->subtotal > 0) {
+            if ($this->discountType == 1 && (float) $this->discountValue > 0) {
+                // Percentage discount
+                $this->discount = $this->subtotal * ((float) $this->discountValue / 100);
+            } else {
+                // Fixed discount - cap at subtotal to prevent negative
+                $this->discount = min($this->subtotal, (float) $this->discountValue);
+            }
         }
 
         // Calculate total (with tax if applicable)
-        $afterDiscount = $this->subtotal - $this->discount;
+        $afterDiscount = max(0, $this->subtotal - $this->discount);
         $taxAmount = $this->tax > 0 ? $afterDiscount * ($this->tax / 100) : 0;
         $this->total = $afterDiscount + $taxAmount;
 
@@ -414,6 +406,7 @@ class PosTerminal extends Component
         $this->showDiscountModal = false;
         $this->showItemDiscountModal = false;
         $this->showProfileModal = false;
+        $this->showNewCustomerModal = false;
         $this->editingCartIndex = null;
     }
 
@@ -540,84 +533,153 @@ class PosTerminal extends Component
         $this->calculateTotals();
     }
 
-    public function processPayment(OrderService $orderService)
+    public function processPayment($cartData, $paymentData)
     {
-        if (empty($this->cart)) {
-            $this->dispatch('notify', type: 'error', message: 'Keranjang kosong');
+        // 1. Sanitize & Prepare Inputs
+        // We only trust IDs and Quantities from the frontend.
+        // We do NOT trust prices, names, or totals.
+        $frontendCart = collect($cartData)->map(fn($item) => (array) $item);
+
+        $this->discountValue = $paymentData['discountValue'];
+        $this->discountType = $paymentData['discountType'];
+        $this->tax = $paymentData['tax'];
+
+        $this->paymentMethod = $paymentData['paymentMethod'];
+        $this->amountPaid = (float) $paymentData['amountPaid'];
+        $this->paymentStatus = $paymentData['paymentStatus'];
+
+        // Sanitize Note: Limit to 255 chars and strip tags
+        $rawNote = $paymentData['note'] ?? '';
+        $this->note = substr(strip_tags($rawNote), 0, 255);
+
+        // 2. Validate Payment Rules Early
+        if ($this->paymentStatus === 'debt' && !$this->selectedCustomerId) {
+            $this->dispatch('notify', type: 'error', message: 'Hutang harus memilih pelanggan!');
             return;
         }
 
-        // Recalculate everything on the server side based on the synced cart
-        $tempSubtotal = array_sum(array_column($this->cart, 'total'));
-
-        $tempDiscount = 0;
-        if ($this->discountType == 1 && (float) $this->discountValue > 0) {
-            $tempDiscount = $tempSubtotal * ((float) $this->discountValue / 100);
-        } else {
-            $tempDiscount = (float) $this->discountValue;
+        if (empty($frontendCart)) {
+            $this->dispatch('notify', type: 'error', message: 'Keranjang kosong (Server)');
+            return;
         }
 
-        $afterDiscount = $tempSubtotal - $tempDiscount;
-        $tempTax = $this->tax > 0 ? $afterDiscount * ($this->tax / 100) : 0;
-        $tempTotal = $afterDiscount + $tempTax;
-        $tempChange = max(0, (float) $this->amountPaid - $tempTotal);
+        // 3. Rebuild Cart from Database (The Truth)
+        $productIds = $frontendCart->pluck('product_id')->toArray();
+        $dbProducts = Product::whereIn('id', $productIds)->get()->keyBy('id');
 
-        // Logic for Payment Status
-        if ($this->paymentStatus === 'unpaid') {
-            $this->amountPaid = 0;
-            $this->change = 0;
-        } elseif ($this->paymentStatus === 'debt') {
-            // Debt allows partial payment. 
-            // If amountPaid >= tempTotal, it should probably be 'paid', but user selected 'debt'. 
-            // We respect user choice but maybe ensure amountPaid < tempTotal? 
-            // For flexibility, we allow whatever.
-            $tempChange = max(0, (float) $this->amountPaid - $tempTotal);
-        } elseif ($this->paymentStatus === 'paid') {
-            // Enforce full payment
-            if ((float) $this->amountPaid < $tempTotal) {
-                // If paid less, switch to debt or error? Error is safer.
-                $this->dispatch('notify', type: 'error', message: 'Jumlah bayar kurang untuk status Lunas');
+        $safeCart = [];
+
+        foreach ($frontendCart as $item) {
+            $pid = $item['product_id'];
+            $qty = (int) $item['quantity'];
+
+            if ($qty <= 0)
+                continue; // Skip invalid quantities
+
+            if (!isset($dbProducts[$pid])) {
+                $this->dispatch('notify', type: 'error', message: "Produk ID $pid tidak ditemukan.");
+                return;
+            }
+
+            $product = $dbProducts[$pid];
+
+            // Manual Discount Security Check:
+            // If we want to allow manual discounts, we should probably validate them or 
+            // implementation them securely. For now, we will RESET to original price.
+            // If you need manual discounts, pass them separately and validate authorization.
+            // *Assuming for this fix we revert to strict DB prices to prevent tampering*
+            // Or if we want to support manual discount, we must trust the `manual_discount` flag 
+            // but carefully. Ideally manual discount should require server-side toggle.
+            // Let's assume for high-security, we stick to DB prices + Logic Discounts.
+
+            // Reconstruct Item
+            $safeItem = [
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'image' => $product->image,
+                'stock' => $product->stock,
+                'unlimited_stock' => $product->unlimited_stock,
+
+                // Crucial: Use DB Price
+                'original_price' => (float) $product->selling_price,
+                'price' => (float) $product->selling_price,
+
+                'quantity' => $qty,
+                'total' => (float) $product->selling_price * $qty,
+
+                'discount_info' => null,
+                'manual_discount' => false, // Reset manual for security (or implement secure manual logic)
+            ];
+
+            // Stock Check (Early UX check)
+            if (!$product->unlimited_stock && $qty > $product->stock) {
+                $this->dispatch('notify', type: 'error', message: "Stok {$product->name} tidak cukup (Sisa: {$product->stock})");
+                return;
+            }
+
+            $safeCart[] = $safeItem;
+        }
+
+        // 4. Update Component State with Safe Data
+        $this->cart = $safeCart;
+
+        // 5. Re-Apply Server-Side Logic (Discounts, Tax, Totals)
+        // This ensures the "Global Discount" or "Member Discount" is applied to the REAL prices.
+        if ($this->selectedCustomerId) {
+            $this->applyCustomerDiscounts();
+        }
+        $this->calculateTotals(); // Recalculates $this->total based on $this->cart
+
+        // 6. Final Payment Validation with Safe Total
+        // Tolerance for float comparison
+        if ($this->paymentStatus === 'paid') {
+            if ($this->amountPaid < ($this->total - 100)) {
+                $this->dispatch('notify', type: 'error', message: 'Jumlah bayar kurang (Rp ' . number_format($this->total, 0) . ')');
                 return;
             }
         }
 
+        // 7. Process Order
+        $orderService = app(OrderService::class);
+
         try {
             $orderData = [
-                'subtotal' => (float) $tempSubtotal,
-                'discount' => (float) $tempDiscount,
-                'tax' => (float) $tempTax,
-                'total_amount' => (float) $tempTotal,
-                'payment_method' => $this->paymentStatus === 'unpaid' ? 'cash' : $this->paymentMethod, // Default to cash if unpaid? or keep selected?
+                'subtotal' => (float) $this->subtotal,
+                'discount' => (float) $this->discount,
+                'tax' => (float) $this->tax, // Computed in calculateTotals
+                'total_amount' => (float) $this->total,
+                'payment_method' => $this->paymentStatus === 'unpaid' ? 'cash' : $this->paymentMethod,
                 'amount_paid' => (float) $this->amountPaid,
-                'change' => (float) $tempChange,
+                'change' => (float) $this->change, // Computed in calculateChange triggered by total update? 
+                // actually calculateTotals calls calculateChange if modal open, 
+                // but we should ensure it's calculated here.
                 'customer_id' => $this->selectedCustomerId,
                 'payment_status' => $this->paymentStatus,
                 'notes' => $this->note,
             ];
 
+            // Recalculate change explicitly to be safe
+            $orderData['change'] = max(0, $this->amountPaid - $this->total);
+
+            // Pass the SAFE cart to OrderService
             $order = $orderService->createOrder($orderData, $this->cart);
 
-            // Clear cart
+            // Clear & Success
             $this->cart = [];
-            $this->discount = 0;
-            $this->discountValue = '';
+            $this->selectCustomer(null); // Reset customer for next transaction
             $this->calculateTotals();
             $this->showCheckoutModal = false;
 
-            // Sync with Alpine
             $this->dispatch('clear-alpine-cart');
             $this->dispatch('refresh-products', products: Product::active()->get(['id', 'category_id', 'name', 'selling_price', 'image', 'stock', 'unlimited_stock', 'barcode']));
 
-            // Trigger print ONLY if PAID or DEBT (partial)
-            // If UNPAID, maybe print invoice but no receipt? 
-            // Let's print invoice anyway.
             if ($this->printerType === 'bluetooth' || $this->printerType === 'usb_web') {
                 $this->dispatch('printBluetoothReceipt', data: $this->getReceiptData($order));
             } else {
                 $this->dispatch('triggerDirectPrint', orderId: $order->id);
             }
 
-            $this->dispatch('notify', type: 'success', message: 'Transaksi berhasil! Status: ' . ucfirst($order->payment_status));
+            $this->dispatch('notify', type: 'success', message: 'Transaksi berhasil!');
 
         } catch (\Exception $e) {
             $this->dispatch('notify', type: 'error', message: $e->getMessage());
