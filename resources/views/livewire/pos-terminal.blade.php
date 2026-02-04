@@ -122,26 +122,28 @@
                 <!-- Customer Search & Product Search -->
                 <div class="mb-4 space-y-3">
                     <!-- Customer Search -->
+                    <!-- Customer Search -->
                     <div class="relative" x-data="{ open: false }">
                         <div
-                            class="flex items-center gap-2 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl px-3 py-2 shadow-sm">
+                            class="flex items-center gap-2 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl px-3 py-2 shadow-sm relative">
                             <span
                                 class="material-symbols-outlined text-text-muted-light dark:text-text-muted-dark">person</span>
                             <input type="text" wire:model.live.debounce.300ms="customerSearch"
-                                class="flex-1 bg-transparent border-none text-slate-900 dark:text-white text-sm font-medium focus:ring-0 placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark"
+                                class="flex-1 bg-transparent border-none text-slate-900 dark:text-white text-sm font-medium focus:ring-0 placeholder:text-text-muted-light dark:placeholder:text-text-muted-dark pr-8"
                                 placeholder="Cari Pelanggan..." @focus="open = true"
                                 @blur="setTimeout(() => open = false, 200)">
+
                             @if($selectedCustomerId)
                                 <button wire:click="selectCustomer(null)" class="text-red-500 hover:text-red-700">
                                     <span class="material-symbols-outlined text-sm">close</span>
                                 </button>
+                            @else
+                                <button wire:click="openNewCustomerModal"
+                                    class="text-primary hover:text-red-600 transition-colors" title="Tambah Pelanggan Baru">
+                                    <span class="material-symbols-outlined text-[20px]">add_circle</span>
+                                </button>
                             @endif
                         </div>
-                        <button wire:click="openNewCustomerModal"
-                            class="p-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-colors border border-primary/20"
-                            title="Tambah Pelanggan Baru">
-                            <span class="material-symbols-outlined">add</span>
-                        </button>
 
                         @if(!empty($customers) && !$selectedCustomerId)
                             <div
