@@ -1,0 +1,7 @@
+name,sku,barcode,category,description,purchase_price,selling_price,stock,min_stock,unlimited_stock,track_cost,is_active
+"Indomie Goreng",SKU-TEST-001,8991234001,"Makanan","Mi goreng instant",2500,3500,100,10,false,true,true
+"Teh Botol Sosro",SKU-TEST-002,8991234002,"Minuman","Teh dalam botol",3000,5000,50,5,false,true,true
+"Produk Tanpa Kategori",SKU-TEST-003,8991234003,,"Produk tanpa kategori",1000,2000,30,5,false,true,true
+"Produk Tanpa Barcode",SKU-TEST-004,,,Produk tanpa barcode,1500,2500,20,,,true,true
+"Produk Minimal",SKU-TEST-005,,,,,500,1500,10,,,,
+"Produk Tanpa Barcode 2",SKU-TEST-006,,,"Snack",,800,1200,40,,,,

@@ -59,7 +59,7 @@ class ProductResource extends Resource
                                 Forms\Components\TextInput::make('barcode')
                                     ->label('Barcode')
                                     ->unique(ignoreRecord: true)
-                                    ->maxLength(50),
+                                    ->maxLength(150),
                                 Forms\Components\Textarea::make('description')
                                     ->label('Deskripsi')
                                     ->rows(3)
