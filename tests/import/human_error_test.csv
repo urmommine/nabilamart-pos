@@ -1,0 +1,7 @@
+name,sku,barcode,category,description,purchase_price,selling_price,stock,min_stock,unlimited_stock,track_cost,is_active
+"Kripik Singkong ",SKU-ERROR-001,8990001,"makanan","Ada spasi di akhir nama",1000,2000,50,5,false,true,true
+"Kripik Pisang","SKU-ERROR-002 ",8990002,"Makanan","Ada spasi di akhir SKU",1500,2500,40,5,false,true,true
+"Kerupuk Kaleng",SKU-ERROR-003,8990003,"MAKANAN","Kategori huruf besar semua",500,1000,100,10,false,true,true
+"Jasa Service",SKU-SERVICE-001,,,"Unlimited tapi ada stok",0,50000,999,0,true,true,true
+"Produk Lupa Modal",SKU-ERROR-004,8990004,"Minuman","Ada harga beli tapi track_cost false",4500,6000,20,5,false,false,true
+"Harga Jual 0",SKU-ERROR-005,8990005,"Snack","Harga jual 0 (human error)",2000,0,10,2,false,true,true

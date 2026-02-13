@@ -168,7 +168,8 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('barcode')
                     ->label('Barcode')
                     ->searchable()
-                    ->hidden(true),
+                    // ->hidden(true),
+                    ,
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Aktif')
                     ->boolean(),
