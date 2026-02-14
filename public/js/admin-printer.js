@@ -124,7 +124,8 @@ function connectPrinter(type = 'bluetooth') {
 
     try {
         // Always re-init so we get a fresh attempt for the chosen type
-        printerInstance = new PrintHub.init({
+        // Use global PrintHub class exposed in app.js
+        printerInstance = new PrintHub({
             paperSize: "58",
             printerType: phType
         });

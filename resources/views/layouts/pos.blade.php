@@ -18,34 +18,7 @@
         }
     </script>
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 
-    <!-- Theme Configuration -->
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#ea2a33",
-                        "background-light": "#f8f6f6",
-                        "background-dark": "#181111",
-                        "surface-light": "#ffffff",
-                        "surface-dark": "#241a1a",
-                        "border-light": "#e2e8f0",
-                        "border-dark": "#382929",
-                        "text-muted-light": "#64748b",
-                        "text-muted-dark": "#b89d9f",
-                    },
-                    fontFamily: {
-                        "display": ["Spline Sans", "sans-serif"]
-                    },
-                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
-                },
-            },
-        }
-    </script>
 
     <!-- Google Fonts: Spline Sans -->
     <link href="https://fonts.googleapis.com" rel="preconnect" />
@@ -63,7 +36,6 @@
 
     <!-- Printer JS -->
     <!-- Printer JS (PrintHub) -->
-    <script src="https://cdn.jsdelivr.net/npm/printhub@latest/dist/index.global.js"></script>
 
     <style>
         /* Hide scrollbar for Chrome, Safari and Opera */

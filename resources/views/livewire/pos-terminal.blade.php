@@ -901,7 +901,7 @@
             if (!printerInstance) {
                 try {
                     // PrintHub Init
-                    printerInstance = new PrintHub.init({
+                    printerInstance = new PrintHub({
                         paperSize: "58",
                         printerType: pType === 'usb_web' ? 'usb' : 'bluetooth'
                     });
@@ -954,7 +954,7 @@
 
                         try {
                             if (!printerInstance) {
-                                printerInstance = new PrintHub.init({
+                                printerInstance = new PrintHub({
                                     paperSize: "58",
                                     printerType: 'usb'
                                 });
@@ -1002,7 +1002,7 @@
 
                         try {
                             if (!printerInstance) {
-                                printerInstance = new PrintHub.init({
+                                printerInstance = new PrintHub({
                                     paperSize: "58",
                                     printerType: 'bluetooth'
                                 });

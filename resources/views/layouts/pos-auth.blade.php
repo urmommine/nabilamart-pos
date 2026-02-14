@@ -7,29 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'POS') }} - Login</title>
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 
-    <!-- Theme Configuration -->
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#ea2a33",
-                        "background-light": "#f8f6f6",
-                        "background-dark": "#181111",
-                        "surface-dark": "#241a1a",
-                        "border-dark": "#382929",
-                    },
-                    fontFamily: {
-                        "display": ["Spline Sans", "sans-serif"]
-                    },
-                },
-            },
-        }
-    </script>
 
     <!-- Google Fonts: Spline Sans -->
     <link href="https://fonts.googleapis.com" rel="preconnect" />
