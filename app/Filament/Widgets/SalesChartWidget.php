@@ -14,6 +14,8 @@ class SalesChartWidget extends ChartWidget
 
     protected int | string | array $columnSpan = 'full';
 
+    protected static ?string $maxHeight = '300px';
+
     protected function getData(): array
     {
         $startDate = Carbon::today()->subDays(6);
