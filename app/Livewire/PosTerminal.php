@@ -248,8 +248,12 @@ class PosTerminal extends Component
         if (empty($this->cart))
             return;
 
-        // Reset all to original price first
+        // Reset non-manual items to original price first
         foreach ($this->cart as &$item) {
+            // Preserve manual overrides — don't reset them
+            if (isset($item['manual_discount']) && $item['manual_discount']) {
+                continue;
+            }
             $item['price'] = $item['original_price'];
             $item['discount_info'] = null;
         }
@@ -589,15 +593,14 @@ class PosTerminal extends Component
 
             $product = $dbProducts[$pid];
 
-            // Handle Manual Discounts
+            // Handle Discounts (Manual or Customer-applied)
             $price = (float) $product->selling_price;
-            $discountInfo = null;
+            $discountInfo = $item['discount_info'] ?? null;
             $manualDiscount = false;
 
-            // Allow manual discounts from frontend if present
+            // Trust frontend price only for manual discounts
             if (isset($item['manual_discount']) && $item['manual_discount']) {
                 $price = (float) $item['price'];
-                $discountInfo = $item['discount_info'] ?? null;
                 $manualDiscount = true;
             }
 
@@ -651,16 +654,18 @@ class PosTerminal extends Component
         $orderService = app(OrderService::class);
 
         try {
+            // Compute the actual tax amount (not percentage) for storage
+            $afterDiscount = max(0, $this->subtotal - $this->discount);
+            $taxAmount = $this->tax > 0 ? $afterDiscount * ($this->tax / 100) : 0;
+
             $orderData = [
                 'subtotal' => (float) $this->subtotal,
                 'discount' => (float) $this->discount,
-                'tax' => (float) $this->tax, // Computed in calculateTotals
+                'tax' => round($taxAmount, 2),
                 'total_amount' => (float) $this->total,
                 'payment_method' => $this->paymentStatus === 'unpaid' ? 'cash' : $this->paymentMethod,
                 'amount_paid' => (float) $this->amountPaid,
-                'change' => (float) $this->change, // Computed in calculateChange triggered by total update? 
-                // actually calculateTotals calls calculateChange if modal open, 
-                // but we should ensure it's calculated here.
+                'change' => (float) $this->change,
                 'customer_id' => $this->selectedCustomerId,
                 'payment_status' => $this->paymentStatus,
                 'notes' => $this->note,

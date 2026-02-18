@@ -1075,7 +1075,7 @@
                     await print.writeText("No: " + receipt.invoice, { align: "left" });
                     await print.writeText("Tgl: " + receipt.date, { align: "left" });
                     // await print.writeText("Kasir: " + receipt.cashier, { align: "left" });
-                    // await print.writeText("Pelanggan: " + receipt.customer, { align: "left" });
+                    await print.writeText("Pelanggan: " + receipt.customer, { align: "left" });
                     await print.writeDashLine();
 
                     // Items
