@@ -114,21 +114,27 @@ class ReceiptPrinter
     protected function printItems(Order $order): void
     {
         foreach ($order->items as $item) {
-            // Product name
+            // Product name (bold)
+            $this->printer->setEmphasis(true);
             $this->printer->text($this->truncate($item->product_name, 32) . "\n");
+            $this->printer->setEmphasis(false);
 
-            // Quantity x Price = Total
             $qty = $item->quantity;
+            $originalPrice = $item->original_price ?? $item->unit_price;
             $price = number_format((float) $item->unit_price, 0, ',', '.');
             $total = number_format((float) $item->total_price, 0, ',', '.');
 
-            if ($item->discount_info) {
-                $this->printer->setJustification(Printer::JUSTIFY_LEFT);
-                $this->printer->text("  (Disc: {$item->discount_info})\n");
+            if ($item->discount_info && (float) $originalPrice > (float) $item->unit_price) {
+                // Discounted: show original price + discount info
+                $origFmt = number_format((float) $originalPrice, 0, ',', '.');
+                $discLine = "  {$qty} x {$origFmt}  ({$item->discount_info})";
+                $this->printer->text($discLine . "\n");
+                $this->printer->text($this->formatLine("", $total, 32) . "\n");
+            } else {
+                // No discount: standard format
+                $line = "  {$qty} x {$price}";
+                $this->printer->text($this->formatLine($line, $total, 32) . "\n");
             }
-
-            $line = "  {$qty} x {$price}";
-            $this->printer->text($this->formatLine($line, $total, 32) . "\n");
         }
 
         $this->printer->text(str_repeat("-", 32) . "\n");

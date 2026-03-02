@@ -708,12 +708,14 @@ class PosTerminal extends Component
             'invoice' => $order->invoice_number,
             'date' => $order->created_at->format('d-m-Y H:i'),
             'cashier' => Auth::user()->name,
-            'customer' => $order->customer ? $order->customer->name : 'Walk-in Customer',
+            'customer' => $order->customer ? $order->customer->name : 'Umum',
             'items' => $order->items->map(function ($item) {
+                $originalPrice = $item->original_price ?? $item->unit_price;
                 return [
                     'name' => $item->product_name,
                     'qty' => $item->quantity,
                     'price' => $item->unit_price,
+                    'original_price' => (float) $originalPrice,
                     'total' => $item->total_price,
                     'discount_info' => $item->discount_info,
                 ];
@@ -722,7 +724,8 @@ class PosTerminal extends Component
             'discount' => $order->discount,
             'tax' => $order->tax,
             'total' => $order->total_amount,
-            'payment_method' => ucfirst($order->payment_method) . ' (' . ucfirst($order->payment_status) . ')',
+            'payment_method' => $order->payment_method,
+            'payment_status' => $order->payment_status,
             'amount_paid' => $order->amount_paid,
             'change' => $order->change,
             'footer' => StoreSetting::get(StoreSetting::RECEIPT_FOOTER, 'Terima Kasih'),

@@ -48,57 +48,64 @@ document.addEventListener('livewire:init', () => {
         let print = window.btPrinter;
 
         try {
+            const fmt = (v) => new Intl.NumberFormat('id-ID').format(v);
+
             // Header
             await print.writeText(receipt.storeName, { align: "center", bold: true, size: "double" });
             if (receipt.storeAddress) await print.writeText(receipt.storeAddress, { align: "center" });
             if (receipt.storePhone) await print.writeText(receipt.storePhone, { align: "center" });
 
-            await print.writeLineBreak();
-            await print.writeText("No: " + receipt.invoice, { align: "left" });
-            await print.writeText("Tgl: " + receipt.date, { align: "left" });
+            await print.writeDashLine();
+            await print.writeText("No  : " + receipt.invoice, { align: "left" });
+            await print.writeText("Tgl : " + receipt.date, { align: "left" });
             await print.writeText("Kasir: " + receipt.cashier, { align: "left" });
-            await print.writeText("Pelanggan: " + receipt.customer, { align: "left" });
+            if (receipt.customer) await print.writeText("Plgn : " + receipt.customer, { align: "left" });
             await print.writeDashLine();
 
             // Items
             if (receipt.items && receipt.items.length > 0) {
                 for (let item of receipt.items) {
-                    await print.writeText(item.name, { align: "left" });
+                    await print.writeText(item.name, { align: "left", bold: true });
 
-                    if (item.discount_info) {
-                        await print.writeText("  (Disc: " + item.discount_info + ")", { align: "left" });
+                    if (item.discount_info && item.original_price && item.original_price > item.price) {
+                        // Discounted: show original price strikethrough-style
+                        let discLine = "  " + item.qty + " x " + fmt(item.original_price) + "  (" + item.discount_info + ")";
+                        await print.writeText(discLine, { align: "left" });
+                        await print.writeTextWith2Column("", fmt(item.total));
+                    } else {
+                        // No discount: standard format
+                        let line_left = "  " + item.qty + " x " + fmt(item.price);
+                        await print.writeTextWith2Column(line_left, fmt(item.total));
                     }
-
-                    // Format: 2x @10.000   20.000
-                    let line2_left = item.qty + "x @" + new Intl.NumberFormat('id-ID').format(item.price);
-                    let line2_right = new Intl.NumberFormat('id-ID').format(item.total);
-                    await print.writeTextWith2Column(line2_left, line2_right);
                 }
             }
             await print.writeDashLine();
 
             // Totals
-            await print.writeTextWith2Column("Subtotal", new Intl.NumberFormat('id-ID').format(receipt.subtotal));
+            await print.writeTextWith2Column("Subtotal", "Rp " + fmt(receipt.subtotal));
             if (receipt.discount > 0) {
-                await print.writeTextWith2Column("Diskon", "-" + new Intl.NumberFormat('id-ID').format(receipt.discount));
+                await print.writeTextWith2Column("Diskon", "-Rp " + fmt(receipt.discount));
             }
             if (receipt.tax > 0) {
-                await print.writeTextWith2Column("Pajak", new Intl.NumberFormat('id-ID').format(receipt.tax));
+                await print.writeTextWith2Column("Pajak", "Rp " + fmt(receipt.tax));
             }
 
-            // Total Large
-            await print.writeLineBreak();
-            await print.writeText("TOTAL", { align: "center", bold: true });
-            await print.writeText("Rp " + new Intl.NumberFormat('id-ID').format(receipt.total), { align: "center", bold: true, size: "double" });
-            await print.writeLineBreak();
+            await print.writeDashLine();
+            await print.writeTextWith2Column("TOTAL", "Rp " + fmt(receipt.total), { bold: true });
+            await print.writeDashLine();
 
-            await print.writeTextWith2Column("Tunai", new Intl.NumberFormat('id-ID').format(receipt.amount_paid));
-            await print.writeTextWith2Column("Kembali", new Intl.NumberFormat('id-ID').format(receipt.change));
+            // Payment
+            const methodLabel = { cash: 'Tunai', qris: 'QRIS', transfer: 'Transfer' };
+            const payLabel = methodLabel[receipt.payment_method] || receipt.payment_method;
+            await print.writeTextWith2Column("Bayar (" + payLabel + ")", "Rp " + fmt(receipt.amount_paid));
+            if (receipt.change > 0) {
+                await print.writeTextWith2Column("Kembali", "Rp " + fmt(receipt.change));
+            }
 
             // Footer
-            await print.writeDashLine();
+            await print.writeLineBreak();
             await print.writeText(receipt.footer, { align: "center" });
-            await print.writeLineBreak(3); // Feed
+            await print.writeLineBreak({ count: 3 });
 
             sendAdminNotification('Berhasil Mencetak', '', 'success');
 

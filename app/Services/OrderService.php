@@ -61,6 +61,7 @@ class OrderService
                         'product_name' => $item['name'],
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['price'],
+                        'original_price' => $item['original_price'] ?? $item['price'],
                         'total_price' => $item['total'],
                         'discount_info' => $item['discount_info'] ?? null,
                     ]);

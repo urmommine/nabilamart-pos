@@ -178,7 +178,9 @@ class OrderResource extends Resource
                                 'name' => $item->product_name,
                                 'qty' => $item->quantity,
                                 'price' => $item->unit_price,
+                                'original_price' => (float) ($item->original_price ?? $item->unit_price),
                                 'total' => $item->total_price,
+                                'discount_info' => $item->discount_info,
                             ];
                         })->toArray();
 
@@ -190,7 +192,7 @@ class OrderResource extends Resource
                             'invoice' => $record->invoice_number,
                             'date' => $record->created_at->format('d/m/Y H:i'),
                             'cashier' => $record->user->name ?? '-',
-                            'customer' => $record->customer->name ?? 'Walk-in Customer',
+                            'customer' => $record->customer->name ?? 'Umum',
                             'items' => $items,
                             'subtotal' => $record->subtotal,
                             'discount' => $record->discount,
@@ -199,6 +201,7 @@ class OrderResource extends Resource
                             'amount_paid' => $record->amount_paid,
                             'change' => $record->change,
                             'payment_method' => $record->payment_method,
+                            'payment_status' => $record->payment_status,
                         ];
 
                         $action->getLivewire()->dispatch('print-invoice', data: $receiptData);

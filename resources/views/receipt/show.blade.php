@@ -191,15 +191,29 @@
             @foreach($order->items as $item)
                 <div class="item">
                     <div class="item-name">{{ $item->product_name }}</div>
-                    @if($item->discount_info)
-                        <div class="item-detail" style="font-size: 10px; font-style: italic;">
-                            <span>Diskon: {{ $item->discount_info }}</span>
+                    @php
+                        $originalPrice = $item->original_price ?? $item->unit_price;
+                        $hasDiscount = $item->discount_info && (float) $originalPrice > (float) $item->unit_price;
+                    @endphp
+                    @if($hasDiscount)
+                        <div class="item-detail" style="font-size: 10px; color: #999;">
+                            <span>
+                                {{ $item->quantity }} x
+                                <span style="text-decoration: line-through;">Rp
+                                    {{ number_format($originalPrice, 0, ',', '.') }}</span>
+                                <span style="color: #e74c3c; font-style: italic;">({{ $item->discount_info }})</span>
+                            </span>
+                        </div>
+                        <div class="item-detail">
+                            <span>{{ $item->quantity }} x Rp {{ number_format($item->unit_price, 0, ',', '.') }}</span>
+                            <span>Rp {{ number_format($item->total_price, 0, ',', '.') }}</span>
+                        </div>
+                    @else
+                        <div class="item-detail">
+                            <span>{{ $item->quantity }} x Rp {{ number_format($item->unit_price, 0, ',', '.') }}</span>
+                            <span>Rp {{ number_format($item->total_price, 0, ',', '.') }}</span>
                         </div>
                     @endif
-                    <div class="item-detail">
-                        <span>{{ $item->quantity }} x Rp {{ number_format($item->unit_price, 0, ',', '.') }}</span>
-                        <span>Rp {{ number_format($item->total_price, 0, ',', '.') }}</span>
-                    </div>
                 </div>
             @endforeach
         </div>
