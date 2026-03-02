@@ -1085,11 +1085,13 @@
                         await print.writeText(item.name, { align: "left", bold: true });
 
                         if (item.discount_info && item.original_price && item.original_price > item.price) {
-                            // Discounted: show original price strikethrough-style
-                            // Line 1: qty x original_price  (disc info)
+                            // Discounted: show original price + discount info
                             let discLine = "  " + item.qty + " x " + fmt(item.original_price) + "  (" + item.discount_info + ")";
                             await print.writeText(discLine, { align: "left" });
-                            // Line 2: right-aligned discounted total
+                            // Original total (before discount)
+                            let origTotal = item.qty * item.original_price;
+                            await print.writeTextWith2Column("", fmt(origTotal), {underline: true, bold: true});
+                            // Discounted total (underlined)
                             await print.writeTextWith2Column("", fmt(item.total));
                         } else {
                             // No discount: standard format

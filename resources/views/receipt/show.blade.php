@@ -203,6 +203,8 @@
                                     {{ number_format($originalPrice, 0, ',', '.') }}</span>
                                 <span style="color: #e74c3c; font-style: italic;">({{ $item->discount_info }})</span>
                             </span>
+                            <span style="text-decoration: line-through;">Rp
+                                {{ number_format($originalPrice * $item->quantity, 0, ',', '.') }}</span>
                         </div>
                         <div class="item-detail">
                             <span>{{ $item->quantity }} x Rp {{ number_format($item->unit_price, 0, ',', '.') }}</span>

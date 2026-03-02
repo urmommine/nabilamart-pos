@@ -68,9 +68,13 @@ document.addEventListener('livewire:init', () => {
                     await print.writeText(item.name, { align: "left", bold: true });
 
                     if (item.discount_info && item.original_price && item.original_price > item.price) {
-                        // Discounted: show original price strikethrough-style
+                        // Discounted: show original price + discount info
                         let discLine = "  " + item.qty + " x " + fmt(item.original_price) + "  (" + item.discount_info + ")";
                         await print.writeText(discLine, { align: "left" });
+                        // Original total (before discount)
+                        let origTotal = item.qty * item.original_price;
+                        await print.writeTextWith2Column("", fmt(origTotal), { underline: true, bold: true });
+                        // Discounted total (underlined)
                         await print.writeTextWith2Column("", fmt(item.total));
                     } else {
                         // No discount: standard format

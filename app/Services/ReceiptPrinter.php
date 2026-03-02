@@ -127,9 +127,11 @@ class ReceiptPrinter
             if ($item->discount_info && (float) $originalPrice > (float) $item->unit_price) {
                 // Discounted: show original price + discount info
                 $origFmt = number_format((float) $originalPrice, 0, ',', '.');
+                $origTotal = number_format((float) $originalPrice * $qty, 0, ',', '.');
                 $discLine = "  {$qty} x {$origFmt}  ({$item->discount_info})";
                 $this->printer->text($discLine . "\n");
-                $this->printer->text($this->formatLine("", $total, 32) . "\n");
+                // Original total → discounted total
+                $this->printer->text($this->formatLine("  " . $origTotal, $total, 32) . "\n");
             } else {
                 // No discount: standard format
                 $line = "  {$qty} x {$price}";
