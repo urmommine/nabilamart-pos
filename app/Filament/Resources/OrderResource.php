@@ -349,17 +349,28 @@ class OrderResource extends Resource
                                 ->weight('bold'),
                             Infolists\Components\TextEntry::make('quantity')
                                 ->label('Jumlah'),
-                            //->alignCenter(),
                             Infolists\Components\TextEntry::make('unit_price')
                                 ->label('Harga Satuan')
-                                ->money('IDR'),
-                            // ->alignEnd(),
+                                ->money('IDR')
+                                ->formatStateUsing(function ($state, $record) {
+                                    $originalPrice = $record->original_price ?? $state;
+                                    $formatted = 'Rp ' . number_format((float) $state, 0, ',', '.');
+                                    if ($record->discount_info && (float) $originalPrice > (float) $state) {
+                                        $origFormatted = 'Rp ' . number_format((float) $originalPrice, 0, ',', '.');
+                                        return new HtmlString("<s style='color:#999'>{$origFormatted}</s><p style=' font-bold'>{$formatted}</p>");
+                                    }
+                                    return $formatted;
+                                }),
+                            Infolists\Components\TextEntry::make('discount_info')
+                                ->label('Diskon')
+                                ->placeholder('-')
+                                ->badge()
+                                ->color('danger'),
                             Infolists\Components\TextEntry::make('total_price')
                                 ->label('Total Harga')
                                 ->money('IDR')
                                 ->weight('bold'),
-                            // ->alignEnd(),
-                        ])->columns(4)
+                        ])->columns(5)
                         ->grid(1),
                 ]),
         ];
